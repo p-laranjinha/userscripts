@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      .portlet-body p,
+      p {
+        margin-top: 0;
+      }
+      body {
+        background: #181818;
+        font-family: Open Sans, open-sans, Helvetica Neue, Helvetica, Roboto,
+          Arial, sans-serif;
+        line-height: 1.42857143;
+        font-size: 16px;
+        margin: 0;
+      }
+      .font-white {
+        color: #fff !important;
+      }
+      .portlet {
+        background: #131313;
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        color: hsla(0, 0%, 100%, 0.8);
+        padding: 1em 20px 0;
+        margin: 10px 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .author-note-portlet {
+        background: #393939;
+        color: hsla(0, 0%, 100%, 0.8);
+        border: 0;
+        padding: 0 10px 10px;
+        margin: 0 0 1em;
+      }
+      .portlet-title {
+        border-bottom: 0;
+        margin-bottom: 10px;
+        min-height: 41px;
+        padding: 0;
+        margin-left: 15px;
+      }
+      .caption {
+        padding: 16px 0 2px;
+        display: inline-block;
+        float: left;
+        font-size: 18px;
+        line-height: 18px;
+      }
+      .uppercase {
+        text-transform: uppercase !important;
+      }
+      .bold {
+        font-weight: 700 !important;
+      }
+      a {
+        color: #337ab7;
+        text-shadow: none;
+        text-decoration: none;
+      }
+      .portlet-body {
+        padding: 10px 15px;
+      }
+      p {
+        margin-bottom: 1em;
+      }
+      .col-md-5 {
+        min-height: 1px;
+        background: #2a3642;
+        margin-left: -15px;
+        margin-right: -15px;
+        padding: 10px;
+      }
+      .text-center {
+        text-align: center;
+      }
+      .container {
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 15px;
+        padding-right: 15px;
+        width: "100%";
+      }
+      .col-md-5>*,
+      .col-md-5>* >* {
+        font-weight: 300;
+        margin: 10px 0;
+      }
+      table {
+        background: #004b7a;
+        border: none;
+        border-collapse: separate;
+        border-spacing: 2px;
+        box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.75);
+        margin: 10px auto;
+        width: 90%;
+      }
+      table td {
+        background: rgba(0, 0, 0, 0.1);
+        border: 1px solid hsla(0, 0%, 100%, 0.25)!important;
+        color: #ccc;
+        margin: 3px;
+        padding: 5px;
+      }
+      .spoiler,
+      .spoiler-new {
+        max-height: 20px;
+        padding-top: 100px;
+        overflow-y: scroll;
+        border: 1px solid hsla(0, 0%, 100%, 0.5);
+      }
+      .spoiler-new:before,
+      .spoiler:before {
+        content: "Spoiler ahead:";
+      }
+      .btn-primary {
+        box-shadow: none;
+        outline: none;
+        line-height: 1.44;
+        background-color: #337ab7;
+        color: #fff;
+        padding: 6px 0;
+        text-align: center;
+        display: inline-block;
+        font-size: 14px;
+        font-weight: 400;
+        border: 1px solid #2e6da4;
+      }
+      .btn-primary[disabled] {
+        cursor: not-allowed;
+        opacity: 0.65;
+      }
+      .col-xs-12 {
+        width: 100%;
+      }
+      .col-xs-6 {
+        width: 50%;
+        position: relative;
+        float: left;
+      }
+      .visible-xs,
+      .visible-xs-block {
+        display: none;
+      }
+      .col-xs-4 {
+        width: 33.33333333%;
+        margin: 0;
+      }
+      .row {
+        display: flex;
+        margin-bottom: 1em;
+      }
+      @media (min-width: 992px) {
+        .container {
+          width: 970px;
+        }
+        .col-md-4 {
+          width: 33.33333333%;
+        }
+        .col-md-offset-4 {
+          margin-left: 33.33333333%;
+        }
+      }
+      @media (min-width: 1200px) {
+        .container {
+          width: 1170px;
+        }
+        .col-lg-3 {
+          width: 25%;
+        }
+        .col-lg-offset-6 {
+          margin-left: 50%;
+        }
+      }
+      @media(pointer: none),
+        (pointer: coarse),
+        (hover: none),
+        (hover: on-demand) {
+        .row {
+          display: none;
+        }
+      }
+    </style>
+    <script>
+      window.close();
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="col-md-5 col-lg-6 col-md-offset-1 text-center md-text-left">
+        <a href="https://www.royalroad.com/fiction/44132/the-calamitous-bob">
+          <h2 style="font-size: 24px" class="font-white inline-block">
+            The Calamitous Bob
+          </h2> </a
+        ><span class="font-white"> by </span>
+        <h3 style="font-size: 21px" class="font-white inline-block">
+          <a href="https://www.royalroad.com/profile/105290" class="font-white"
+            >Mecanimus</a
+          >
+        </h3>
+        <h4 class="font-red-thunderbird star star-47"></h4>
+        <h1 style="margin-top: 10px" class="font-white">
+          Chapter 1: Soul-Slapped
+        </h1>
+      </div>
+      <div class="portlet">
+        <div class="row nav-buttons">
+          <div class="col-xs-6 col-md-4 col-lg-3 col-xl-2">
+            <button class="btn btn-primary col-xs-12" disabled="disabled">
+              <i class="far fa-chevron-double-left mr-3"></i> Previous
+              <br class="visible-xs-block" />Chapter
+            </button>
+          </div>
+          <div
+            class="col-xs-6 col-md-4 col-md-offset-4 col-lg-3 col-lg-offset-6"
+          >
+            <a
+              class="btn btn-primary col-xs-12"
+              href="002_chapter-2-up-a-creek-no-paddle.html"
+            >
+              Next <br class="visible-xs-block" />Chapter
+              <i class="far fa-chevron-double-right ml-3"></i>
+            </a>
+          </div>
+        </div>
+        <div class="chapter-inner chapter-content">
+          <p>
+            <span style="font-weight: 400"
+              >At the heart of the world of Niyl stood a mountain of impossible
+              height. Its sheer cliffs of permafrost were vertical walls gnawed
+              by unceasing winds, and in it hid horrid creatures. From grumpy
+              wyrms to ancient elementals, its fauna was the deadliest in the
+              world, while outside, scathing magical gales could scour the flesh
+              from the bones of even the hardiest explorers. And yet, every
+              year, some still tried to climb to its peak, for it harbored the
+              city of the gods: Larrean.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Ah, Larrean, where strolls could last for moments or eons, where
+              demiurges beat the pavement hand in hand with beings as old as
+              time itself. Solemn temples of marble and gold rose next to
+              eldritch constructs of shells and bones. Coral walls encircled
+              crystal towers and obsidian keeps. The air smelled of spring, of
+              brine, of a kiss by the sea, changing with every step. It was an
+              impossible land where only the mightiest could tread and where one
+              could sell a soul to buy a moment.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The only constant in this dizzying chaos of splendor occupied its
+              highest hill. The Apex Palace held the throne of the ruling
+              monarch of this flourishing metropolis and it guarded its spot
+              with a ferocious zeal, for whoever controlled Larrean, controlled
+              the world.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">Within reason.</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >At the back of the palace, two divine guards in golden armor kept
+              their vigil on either side of a stained glass window of epic
+              proportions. The masterwork represented a decade of grueling
+              effort from a legendary artist, each dye, each detail
+              painstakingly placed to render the victory of the current pantheon
+              over the primordial gods.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >It suddenly exploded outward in a shower of broken shards.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The figure of a naked man slammed against the ground with a
+              grunt, before rolling several times and crashing against a
+              centennial oak, which cracked under the strain.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“ASSHOLE!” a voice screamed from inside.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400">The left guard sighed heavily.</span>
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >On the ground, the King of the Gods stumbled to his feet and held
+              his gorgeous head between two trembling hands. Wheat-colored
+              ringlets adorned a face handsome enough to make angels weep. Right
+              now, however, his charm was somehow diminished by the unfocused
+              brown eyes, the grilled chicken skin stuck to his chest hair, and
+              the scratching of his left ass-cheek.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Maranor, the Goddess of War, stepped out from the remnants of the
+              shattered pane. Fury turned her black eyes into pits. It furrowed
+              her august brow with thunderous wrath and set her raven hair
+              aflutter. It spoke of the desolation of nations.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Not only do you cheat on me,” the deadly belle intoned, crossing
+              her arms under her modest bosom, “but you do it morphed into a
+              golden manatee? A manatee? Have you gone mad?”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The hem of her white dress slowly turned red with fresh blood, an
+              ill omen if there were any. The King of Gods, who looked no worse
+              for the wear after his recent defenestration on account of being
+              God of Luck as a side gig, ignored it. His overtaxed brain still
+              tried to operate through the cataclysmic hangover harrying
+              him.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The words ‘golden manatee’ somehow cut to the haze of
+              immortal-grade alcohol.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">Disaster struck.</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The King of Gods, Emeric, smiled beatifically at the memory of
+              his ravishing, plump-nosed shape.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“We were off our arses and thought it was funny,” he
+              replied.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >A preternatural silence spread over the entire city. Entire
+              legions of warriors and scholars stopped to a standstill. The dark
+              clouds of fate on the march covered the midday sun like a swarm of
+              locusts.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Somewhere in the depth of Emeric’s mind, an ancient instinct
+              awoke, one that dated back to an era when he was not quite as
+              durable as he was now: his survival instinct.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">“Oh SH-“</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">[Divine Killing Blow]</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">[Divine Uncanny Dodge]</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Both skills fired at the exact same time. A ravine formed in the
+              hallowed ground where Emeric used to stand, on a stone that was
+              reputed to be indestructible.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Maranor now held a two-handed sword as tall as she was. The
+              [Slayer] had ended many beings who had thought themselves beyond
+              the reaper’s reach. Her expression had gone beyond anger to emerge
+              on the peaceful land of unadulterated violence.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400">She was going to kill him.</span>
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400">He was a dead god walking.</span>
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Emeric did the only wise thing he could. He ran, and she
+              followed.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Maradoc sighed when his erstwhile brother-in-arms stumbled into
+              the House of Many Gates, his locus of power in Larrean.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Alcoves occupied both walls which extended beyond the horizons.
+              It was, as they said, bigger on the inside.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >As soon as he crossed the threshold, Emeric’s expression changed
+              dramatically. Where a gibbering wreck of a coward bumbled before,
+              now there was a mighty god. Golden energy rippled beneath his hale
+              skin, and he stood without a hunch.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Is it truly time?” the god of travels and mysteries asked his
+              old friend.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“It could not have gone better if I had planned it,” the other
+              one replied with confidence, “your twin sacrificed a century of
+              schemes with one act of anger.”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Do not be too confident now. We cannot afford it. I suppose you
+              would like your exit?”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">“If you please.”</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Maradoc waved a lazy arm and one of the alcoves was now host to a
+              blue portal, which Emeric crossed without hesitation. It closed
+              behind him.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">The door banged open.</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Where is he?” his sister demanded.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Maradoc did not reply, even as she came to stand before him with
+              her dread weapon and her even worse temper. They matched hair,
+              eyes, and unyielding scowls.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Be careful that I do not consider you an enemy as well, dear
+              brother,” the woman finally said.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The room darkened. From the alcoves now came whispers at the edge
+              of hearing, fragments of languages long-forgotten that spoke of
+              things best left alone. Maradoc matched Maranor.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Remind yourself of who you are speaking to, dear sister, or I
+              will.”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >They stood frozen, face to face, entrenched in an animosity that
+              only defiled love could bring. It was the intruder who relented
+              first.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“It’s only a matter of time,” she declared on her way out.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Maradoc’s expression turned melancholic as he watched his last
+              living relative go. They had shared so much, and now he had taken
+              the last steps to unbind his fate from hers. Where she had chosen
+              to go, he would not follow. The cost was not worth it.</span
+            >
+          </p>
+          <p>&nbsp;</p>
+          <p>
+            <span style="font-weight: 400"
+              >He turned back to his books with the vain hope that they would
+              dispel the pain. No one suffered like a god could.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Emeric’s body disintegrated into its component atoms the moment
+              he crossed the space between worlds, just as planned. A world came
+              into view, a blue planet with plenty of land masses colored yellow
+              and white and green. It was nice enough, and devoid of any
+              planetoid-sized orbital squids or anything too unpleasant.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >His soul activated a special spell prepared for the occasion, and
+              a small grid flew towards the radiant orb of his psyche.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“No magic, as agreed. Hmm, good development level! How do these
+              metal tubes fly I wonder? Technology? Incredible. Some of those
+              nations are rich too. Excellent,” the mighty soul told
+              itself.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400">Now, to find a suitable host.</span>
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >There was one thing that Emeric had always wanted to get,
+              something that had been denied to him for ages, he who had drunk
+              pure mana from the spring of eternal winter and suckled on the
+              teat of the queen of dryads.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400">He wanted a female orgasm.</span>
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400">He heard it was quite nice.</span>
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >And the polymorph spell could not get him one. It was too
+              superficial a change to grant him this experience.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“That’s right, I’m going to be a lass. Even if Maranor manages to
+              track me to this world, she will never imagine that I would
+              voluntarily incarnate myself in a womanly shell. This plan of mine
+              is brilliant!”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400">So, yes, the host, a woman.</span>
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >His net narrowed down to three billion individuals.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“That many?! Wow. At least I get to be picky.”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >She needed to be a young adult. None of that growing up nonsense.
+              And not married, obviously.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >She had to have peerless magical potential. Even if the world was
+              devoid of magic, Emeric’s soul could create its own. It would be a
+              shame not to use it.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >That still gave him almost six thousand hits!</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Well she had to be hot, obviously.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">Two thousand.</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >From a rich nation, from a connected family, and constantly
+              surrounded by attractive people. A formal education. A loyal
+              friend. A good sex drive.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >There were still twenty entries and he was at a loss. He found
+              one with mesmerizing green eyes and who was already asleep, which
+              was convenient.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">“You will do.”</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Instantly, he traveled down and to the body of the host. The
+              mortal soul was torn off with a mighty swing and he held the tiny
+              white orb in his own golden hand.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >He was pretty sure the process was painless.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">Probably.</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >He slid inside the now deserted mortal coil. As his essence
+              expanded to fill its new container, he felt a pang of guilt stab
+              his cold and desiccated heart.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“You were kind of shafted there, poor girl,” said the man who had
+              done the shafting, “I guess I could help you.”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >There was also the slight problem of soul imbalance between this
+              realm and his own. Could he kill two manticores with one
+              disintegration ray?</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“I’ll just send you back in my stead.”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Emeric opened a minuscule portal to some power locus back home
+              and shoved the soul through. As the gate closed, he breathed into
+              it enough energy to reform a body. He left a tiny bit of himself
+              as well, for good luck.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Let it be known that I am a benevolent god,” Emeric told himself
+              with satisfaction.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400">He finished his integration.</span>
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="text-decoration: underline"
+              ><span style="font-weight: 400"
+                >January 2013, Mopti airport, Mali.</span
+              ></span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >A tall woman in the beige uniform of the French special forces
+              strode to the fortified entrance of the main concourse. She found
+              her target sleeping peacefully against the sandbags, hands on her
+              rifle. She kicked the thick body armor.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Wake the fuck up, Cinderella!” she said.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">“Naskay?”</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The woman frowned, concern evident on her brown, handsome
+              face.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p><span style="font-weight: 400">“You got a stroke, Viv?”</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The smaller woman blinked, emerald eyes drifting around with
+              confusion. She recovered quickly enough.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Sorry Mouq, errr, weird dream is all.”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Well get your ass in gear, corporal, the beardies downed a
+              Gazelle helicopter near Konna. We got to blow up the wreck.”</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Yeah, yeah...” the freshly reincarnated god answered.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >The intruder stood up and inspected their surroundings. They
+              checked their new host and pilfered memories for a hint on what
+              had gone wrong.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >Magical talent? There and waiting.
+            </span>
+          </p>
+          <p>&nbsp;</p>
+          <p>
+            <span style="font-weight: 400"
+              >Interesting background? Back home.
+            </span>
+          </p>
+          <p>&nbsp;</p>
+          <p>
+            <span style="font-weight: 400"
+              >Attractive? Yes, under the layers of Kevlar and ceramic
+              plates.</span
+            >
+          </p>
+          <p>&nbsp;</p>
+          <p><span style="font-weight: 400">Surrounded by hot people?</span></p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >An armored transport rolled to the compound’s gates. All around,
+              fit men and women loaded up and checked their weapons.</span
+            >
+          </p>
+          <p><span style="font-weight: 400"> </span></p>
+          <p>
+            <span style="font-weight: 400"
+              >“Fuck me,” they said with feeling.</span
+            >
+          </p>
+        </div>
+        <div class="portlet solid author-note-portlet">
+          <div class="portlet-title">
+            <div class="caption">
+              <i class="fa fa-sticky-note"></i>
+              <span class="caption-subject bold uppercase"
+                >A note from Mecanimus</span
+              >
+            </div>
+          </div>
+          <div class="portlet-body author-note">
+            <p>
+              The first five chapters were posted as bonus content on Journey.
+              The links are here somewhere but I can't be arsed to find
+              them.&nbsp;
+            </p>
+          </div>
+        </div>
+        <div class="row margin-bottom-10 margin-left-0 margin-right-0">
+          <button class="btn btn-primary col-xs-4" disabled="disabled">
+            Previous <br class="visible-xs" />Chapter
+          </button>
+          <a class="btn btn-primary col-xs-4" href="."
+            >Fiction <br class="visible-xs" />Index</a
+          >
+          <a
+            class="btn btn-primary col-xs-4"
+            href="002_chapter-2-up-a-creek-no-paddle.html"
+            >Next <br class="visible-xs" />Chapter</a
+          >
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
