@@ -1,10 +1,10 @@
 // ==UserScript==
-// @name        Royal Road Download Button Test
+// @name        Royal Road Download Button
 // @license     MIT
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
 // @grant       none
-// @version     4.5
+// @version     4.7
 // @author      Rtonne
 // @description Adds buttons to download to Royal Road chapters
 // @require     https://cdn.jsdelivr.net/npm/jszip@3.10.1
@@ -379,7 +379,7 @@ async function downloadChapters(chapterUrls, totalChapterCount, startIndex) {
               // either because it was renamed or deleted
               adjFilledIndex = "unknown";
             } else if (element2.innerText.includes("Previous")) {
-              adjFilledIndex = (fillZeros + index + startIndex).slice(
+              adjFilledIndex = (fillZeros + (index + startIndex)).slice(
                 totalChapterCountLength * -1
               );
             } else if (element2.innerText.includes("Next")) {
