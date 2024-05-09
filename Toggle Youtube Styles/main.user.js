@@ -12,8 +12,6 @@
 // @grant       GM.unregisterMenuCommand
 // @grant       GM.getValue
 // @grant       GM.setValue
-// @downloadURL https://update.greasyfork.org/scripts/493625/Toggle%20Youtube%20Styles.user.js
-// @updateURL https://update.greasyfork.org/scripts/493625/Toggle%20Youtube%20Styles.meta.js
 // ==/UserScript==
 
 // To check if inplace command replacement is supported
