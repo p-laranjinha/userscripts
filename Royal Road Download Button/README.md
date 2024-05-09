@@ -5,3 +5,11 @@ When the button is pressed, the script scrapes the chosen chapters of the fictio
 The .html files contain styling to emulate Royal Road's default dark mode (with font size 16 due to personal preference), and working previous/next chapter buttons on desktop using the [file URI scheme](https://en.wikipedia.org/wiki/File_URI_scheme).
 
 Tags: Royal Road, RoyalRoad, RR, Web Novel, royalroad.com
+
+---
+
+<div style="float: left;">
+    <img alt="Image of the button on a fiction page" src="https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/fiction_button.png" style="vertical-align: middle;" />
+    <img alt="Image of the button on the top of a chapter page" src="https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/chapter_top_button.png" style="vertical-align: middle;" />
+    <img alt="Image of the button on the bottom of a chapter page" src="https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/chapter_bottom_button.png" style="vertical-align: middle;" />
+</div>

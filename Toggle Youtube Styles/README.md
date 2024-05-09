@@ -7,3 +7,9 @@ Current available toggles:
 - Removes related videos on the side of currently playing videos;
 - Removes shorts from home and subscriptions page;
 - Removes community posts from home and subscriptions page.
+
+---
+
+<div style="float: left;">
+    <img alt="Image of how the options are displayed on Violentmonkey" src="https://raw.githubusercontent.com/p-laranjinha/userscripts/master/Toggle%20Youtube%20Styles/images/options.png" style="vertical-align: middle;" />
+</div>
