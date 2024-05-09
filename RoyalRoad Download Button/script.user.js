@@ -3,8 +3,9 @@
 // @license     MIT
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
+// @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
 // @grant       none
-// @version     4.7
+// @version     4.8
 // @author      Rtonne
 // @description Adds buttons to download to Royal Road chapters
 // @require     https://cdn.jsdelivr.net/npm/jszip@3.10.1
