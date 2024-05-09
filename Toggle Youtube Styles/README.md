@@ -10,6 +10,4 @@ Current available toggles:
 
 ---
 
-<div style="float: left;">
-    <img alt="Image of how the options are displayed on Violentmonkey" src="https://raw.githubusercontent.com/p-laranjinha/userscripts/master/Toggle%20Youtube%20Styles/images/options.png" style="vertical-align: middle;" />
-</div>
+![Image of how the options are displayed on Violentmonkey](https://raw.githubusercontent.com/p-laranjinha/userscripts/master/Toggle%20Youtube%20Styles/images/options.png)

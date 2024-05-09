@@ -8,8 +8,6 @@ Tags: Royal Road, RoyalRoad, RR, Web Novel, royalroad.com
 
 ---
 
-<div style="float: left;">
-    <img alt="Image of the button on a fiction page" src="https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/fiction_button.png" style="vertical-align: middle;" />
-    <img alt="Image of the button on the top of a chapter page" src="https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/chapter_top_button.png" style="vertical-align: middle;" />
-    <img alt="Image of the button on the bottom of a chapter page" src="https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/chapter_bottom_button.png" style="vertical-align: middle;" />
-</div>
+![Image of the button on a fiction page](https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/fiction_button.png)
+![Image of the button on the top of a chapter page](https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/chapter_top_button.png)
+![Image of the button on the bottom of a chapter page](https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/chapter_bottom_button.png)
