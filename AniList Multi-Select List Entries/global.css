@@ -43,9 +43,6 @@ body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
   color: rgb(var(--color-text-lighter));
   margin-bottom: 10px;
 }
-.rtonne-anilist-multiselect-form input[type="number"] {
-  -moz-appearance: textfield;
-}
 .rtonne-anilist-multiselect-form input::-webkit-outer-spin-button,
 .rtonne-anilist-multiselect-form input::-webkit-inner-spin-button {
   -webkit-appearance: none;
