@@ -1,0 +1,113 @@
+.rtonne-anilist-multiselect-addbutton {
+  background: rgb(var(--color-blue-800)) !important;
+}
+.rtonne-anilist-multiselect-removebutton {
+  background: rgb(var(--color-red)) !important;
+}
+.entry-card .rtonne-anilist-multiselect-addbutton,
+.entry-card .rtonne-anilist-multiselect-removebutton {
+  top: 42px !important;
+}
+.entry-card.rtonne-anilist-multiselect-selected {
+  box-shadow: 0 0 8px 2px rgb(var(--color-black)),
+    0 0 0 8px rgb(var(--color-blue)) !important;
+}
+.entry-card:not(.rtonne-anilist-multiselect-selected)
+  .rtonne-anilist-multiselect-removebutton {
+  display: none !important;
+}
+.entry-card.rtonne-anilist-multiselect-selected
+  .rtonne-anilist-multiselect-addbutton {
+  display: none !important;
+}
+
+body.rtonne-anilist-multiselect-modal-hidden .v-modal,
+body.rtonne-anilist-multiselect-dialog-hidden .list-editor-wrap,
+body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
+  display: none !important;
+}
+
+/* Form styling */
+.rtonne-anilist-multiselect-form {
+  margin-top: 32px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 8px rgb(var(--color-background)),
+    0 0 4px 10px rgb(var(--color-black)), 0 0 0 12px rgb(var(--color-blue));
+  font-size: 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.rtonne-anilist-multiselect-form > div > label {
+  display: inline-block;
+  color: rgb(var(--color-text-lighter));
+  margin-bottom: 10px;
+}
+.rtonne-anilist-multiselect-form input[type="number"] {
+  -moz-appearance: textfield;
+}
+.rtonne-anilist-multiselect-form input::-webkit-outer-spin-button,
+.rtonne-anilist-multiselect-form input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.rtonne-anilist-multiselect-form
+  input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+.rtonne-anilist-multiselect-has-enabled-checkbox
+  .rtonne-anilist-multiselect-checkbox:first-of-type:has(input:not(:checked))
+  ~ div {
+  display: none;
+}
+.rtonne-anilist-multiselect-form
+  .el-checkbox__inner:has(.el-checkbox__original[readonly]):after {
+  content: "⎯";
+  color: rgb(var(--color-black));
+  left: 50%;
+  transform: scale(1.5, 2);
+  font-size: 14px;
+  left: 1px;
+  top: -8.5px;
+  width: 0;
+  height: 0;
+}
+.rtonne-anilist-multiselect-form .el-checkbox__inner:after {
+  border-color: transparent;
+}
+.rtonne-anilist-multiselect-form
+  .el-checkbox__input.is-checked
+  .el-checkbox__inner:after {
+  border-color: #fff;
+}
+.rtonne-anilist-multiselect-form
+  .el-checkbox:has(.el-checkbox__original[readonly]) {
+  text-decoration: line-through;
+}
+
+/* Changing the list entries to fit the new button */
+.medialist.table.compact .entry .cover {
+  display: flex !important;
+  max-width: 82px !important;
+  min-width: 82px;
+  gap: 2px;
+  margin-inline: -41px;
+}
+.medialist.table.compact .entry:not(:hover) .cover .image {
+  display: none;
+}
+.medialist.table:not(.compact) .entry:hover .cover {
+  display: flex !important;
+  max-width: 102px !important;
+  min-width: 102px;
+  gap: 2px;
+}
+@media (max-width: 760px) {
+  .medialist.table:not(.compact) .entry:hover .cover {
+    max-width: 82px !important;
+    min-width: 82px;
+  }
+  .medialist.table:not(.compact) .entry:hover {
+    padding-left: 97px;
+  }
+}
