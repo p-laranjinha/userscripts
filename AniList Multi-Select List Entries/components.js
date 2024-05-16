@@ -437,12 +437,12 @@ function createDangerButton(container, text) {
 function createConfirmPopup(title_text, message_text) {
   const modal = document.createElement("div");
   modal.className = "v-modal";
-  modal.style.zIndex = "19999";
+  modal.style.zIndex = "99999";
   document.body.append(modal);
 
   const wrapper = document.createElement("div");
   wrapper.className = "el-message-box__wrapper";
-  wrapper.style.zIndex = "20000";
+  wrapper.style.zIndex = "100000";
   document.body.append(wrapper);
   const container = document.createElement("div");
   container.className = "el-message-box";

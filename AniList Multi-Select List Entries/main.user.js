@@ -11,6 +11,7 @@
 // @grant       GM.addStyle
 // @require     components.js
 // @require     helpers.js
+// @require     actions.js
 // @resource    GLOBAL_CSS global.css
 // ==/UserScript==
 
@@ -26,6 +27,9 @@
 // TODO: add a warning when an error occurs (its not getting the custom lists, for example)
 // TODO: make advanced scores work
 // TODO: make a version that uses the API instead of automated clicks (example:https://greasyfork.org/en/scripts/460393-entry-deleter)
+// TODO: make actions return errors that require input to continue (maybe have option to just skip all with errors)
+// TODO: delete waitForElementToBeDeleted if not required
+// TODO: maybe make updating custom lists be automation instead of api due to rate limits
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -430,59 +434,107 @@ async function setupForm() {
   };
 
   confirm_button.onclick = () => {
-    const selected = document.querySelectorAll(
-      ".rtonne-anilist-multiselect-selected"
-    ).length;
-
     let action_list = "";
+    let values_to_be_changed = {};
     if (!delete_checkbox.checked) {
       if (status_enabled_checkbox.checked) {
         action_list += `<li>Set <u>Status</u> to <b>${status_input.value}</b>.</li>`;
+        switch (status_input.value) {
+          case "Reading":
+          case "Watching":
+            values_to_be_changed.status = "CURRENT";
+            break;
+          case "Plan to read":
+            values_to_be_changed.status = "PLANNING";
+            break;
+          case "Completed":
+            values_to_be_changed.status = "COMPLETED";
+            break;
+          case "Rereading":
+          case "Rewatching":
+            values_to_be_changed.status = "REPEATING";
+            break;
+          case "Paused":
+            values_to_be_changed.status = "PAUSED";
+            break;
+          case "Dropped":
+            values_to_be_changed.status = "DROPPED";
+            break;
+        }
       }
       if (score_enabled_checkbox.checked) {
         action_list += `<li>Set <u>Score</u> to <b>${score_input.value}</b>.</li>`;
-      }
-      if (is_list_anime) {
-        if (progress_inputs.episode_enabled_checkbox.checked) {
-          action_list += `<li>Set <u>Episode Progress</u> to <b>${progress_inputs.episode_input.value}</b>.</li>`;
-        }
-        if (progress_inputs.rewatches_enabled_checkbox.checked) {
-          action_list += `<li>Set <u>Total Rewatches</u> to <b>${progress_inputs.rewatches_input.value}</b>.</li>`;
-        }
-      } else {
-        if (progress_inputs.chapter_enabled_checkbox.checked) {
-          action_list += `<li>Set <u>Chapter Progress</u> to <b>${progress_inputs.chapter_input.value}</b>.</li>`;
-        }
-        if (progress_inputs.volume_enabled_checkbox.checked) {
-          action_list += `<li>Set <u>Volume Progress</u> to <b>${progress_inputs.volume_input.value}</b>.</li>`;
-        }
-        if (progress_inputs.rereads_enabled_checkbox.checked) {
-          action_list += `<li>Set <u>Total Rereads</u> to <b>${progress_inputs.rereads_input.value}</b>.</li>`;
+        values_to_be_changed.score = Number(score_input.value);
+        if (is_list_anime) {
+          if (progress_inputs.episode_enabled_checkbox.checked) {
+            action_list += `<li>Set <u>Episode Progress</u> to <b>${progress_inputs.episode_input.value}</b>.</li>`;
+            values_to_be_changed.progress = Number(
+              progress_inputs.episode_input.value
+            );
+          }
+          if (progress_inputs.rewatches_enabled_checkbox.checked) {
+            action_list += `<li>Set <u>Total Rewatches</u> to <b>${progress_inputs.rewatches_input.value}</b>.</li>`;
+            values_to_be_changed.repeat = Number(
+              progress_inputs.rewatches_input.value
+            );
+          }
+        } else {
+          if (progress_inputs.chapter_enabled_checkbox.checked) {
+            action_list += `<li>Set <u>Chapter Progress</u> to <b>${progress_inputs.chapter_input.value}</b>.</li>`;
+            values_to_be_changed.progress = Number(
+              progress_inputs.chapter_input.value
+            );
+          }
+          if (progress_inputs.volume_enabled_checkbox.checked) {
+            action_list += `<li>Set <u>Volume Progress</u> to <b>${progress_inputs.volume_input.value}</b>.</li>`;
+            values_to_be_changed.progressVolume = Number(
+              progress_inputs.volume_input.value
+            );
+          }
+          if (progress_inputs.rereads_enabled_checkbox.checked) {
+            action_list += `<li>Set <u>Total Rereads</u> to <b>${progress_inputs.rereads_input.value}</b>.</li>`;
+            values_to_be_changed.repeat = Number(
+              progress_inputs.rereads_input.value
+            );
+          }
         }
       }
       if (start_date_enabled_checkbox.checked) {
         action_list += `<li>Set <u>Start Date</u> to <b>${start_date_input.value}</b>.</li>`;
+        values_to_be_changed.startedAt = {
+          year: start_date_input.value.split("-")[0],
+          month: start_date_input.value.split("-")[1],
+          day: start_date_input.value.split("-")[2],
+        };
       }
       if (finish_date_enabled_checkbox.checked) {
         action_list += `<li>Set <u>Finish Date</u> to <b>${finish_date_input.value}</b>.</li>`;
+        values_to_be_changed.completedAt = {
+          year: start_date_input.value.split("-")[0],
+          month: start_date_input.value.split("-")[1],
+          day: start_date_input.value.split("-")[2],
+        };
       }
       if (notes_enabled_checkbox.checked) {
         action_list += `<li>Set <u>Notes</u> to <b>${notes_input.value}</b>.</li>`;
+        values_to_be_changed.notes = notes_input.value;
       }
-      for (let i = 0; i < custom_lists.length; i++) {
-        if (!custom_lists_checkboxes[i].indeterminate) {
-          if (custom_lists_checkboxes[i].checked) {
-            action_list += `<li>Add to the <b>${custom_lists[i]}</b> <u>Custom List</u>.</li>`;
-          } else {
-            action_list += `<li>Remove from the <b>${custom_lists[i]}</b> <u>Custom List</u>.</li>`;
+      if (custom_lists.length > 0) {
+        for (let i = 0; i < custom_lists.length; i++) {
+          if (!custom_lists_checkboxes[i].indeterminate) {
+            if (custom_lists_checkboxes[i].checked) {
+              action_list += `<li>Add to the <b>${custom_lists[i]}</b> <u>Custom List</u>.</li>`;
+            } else {
+              action_list += `<li>Remove from the <b>${custom_lists[i]}</b> <u>Custom List</u>.</li>`;
+            }
           }
         }
-      }
-      if (!hide_from_status_list_checkbox.indeterminate) {
-        if (hide_from_status_list_checkbox.checked) {
-          action_list += `<li><u><b>Hide</b> from status lists.</u></li>`;
-        } else {
-          action_list += `<li><u><b>Show</b> on status lists.</u></li>`;
+        if (!hide_from_status_list_checkbox.indeterminate) {
+          if (hide_from_status_list_checkbox.checked) {
+            action_list += `<li><u><b>Hide</b> from status lists.</u></li>`;
+          } else {
+            action_list += `<li><u><b>Show</b> on status lists.</u></li>`;
+          }
         }
       }
       if (!private_checkbox.indeterminate) {
@@ -503,107 +555,40 @@ async function setupForm() {
       action_list += `<li><u><b>Delete</b></u>.</li>`;
     }
 
+    const selected_entries = document.querySelectorAll(
+      ".rtonne-anilist-multiselect-selected"
+    );
     const confirm_popup_button = createConfirmPopup(
       "Are you sure?",
-      `You're about to do the following actions to <b><u>${selected} entr${
-        selected > 1 ? "ies" : "y"
-      }</u></b>:
+      `You're about to do the following actions to <b><u>${
+        selected_entries.length
+      } entr${selected_entries.length > 1 ? "ies" : "y"}</u></b>:
       ${action_list}`
     );
 
     confirm_popup_button.onclick = async () => {
-      createConfirmPopup("test", "test");
-      const selected_entries = document.querySelectorAll(
-        ".rtonne-anilist-multiselect-selected"
-      );
-      selected_entries[0]
-        .querySelector(".edit:not([class^='rtonne-anilist-multiselect'])")
-        .click();
-      if (!delete_checkbox.checked) {
-        if (status_enabled_checkbox.checked) {
-        }
-        if (score_enabled_checkbox.checked) {
-        }
-        if (is_list_anime) {
-          if (progress_inputs.episode_enabled_checkbox.checked) {
-          }
-          if (progress_inputs.rewatches_enabled_checkbox.checked) {
-          }
-        } else {
-          if (progress_inputs.chapter_enabled_checkbox.checked) {
-          }
-          if (progress_inputs.volume_enabled_checkbox.checked) {
-          }
-          if (progress_inputs.rereads_enabled_checkbox.checked) {
-          }
-        }
-        if (start_date_enabled_checkbox.checked) {
-        }
-        if (finish_date_enabled_checkbox.checked) {
-        }
-        if (notes_enabled_checkbox.checked) {
-        }
-        for (let i = 0; i < custom_lists.length; i++) {
-          if (!custom_lists_checkboxes[i].indeterminate) {
-            if (custom_lists_checkboxes[i].checked) {
-            } else {
-            }
-          }
-        }
-        if (!hide_from_status_list_checkbox.indeterminate) {
-          if (hide_from_status_list_checkbox.checked) {
-          } else {
-          }
-        }
-        if (!private_checkbox.indeterminate) {
-          if (private_checkbox.checked) {
-          } else {
-          }
-        }
-        if (!favourite_checkbox.indeterminate) {
-          if (favourite_checkbox.checked) {
-          } else {
-          }
-        }
-      } else {
-        const [dialog_delete_button] = await waitForElements(
-          ".list-editor-wrap .delete-btn"
-        );
-        dialog_delete_button.click();
-
-        const [confirm_ok_button] = await waitForElements(
-          ".el-message-box .el-button--small.el-button--primary"
-        );
-        // I need to wait for the confirm cancel button as well so it all load properly, somehow
-        await waitForElements(
-          ".el-message-box .el-button--small:not(.el-button--primary)"
-        );
-        const fading_in_confirm_message_container = document.querySelector(
-          ".el-message-box__wrapper.msgbox-fad-enter-active"
-        );
-        // Wait until message container finished fading in
-        await waitForElementToBeRemovedOrHidden(
-          fading_in_confirm_message_container
-        );
-
-        // confirm_ok_button.click();
-
-        // const new_confirm_cancel_button = document.querySelector(
-        //   ".list-editor-wrap .delete-btn"
-        // );
-        // await waitForElementToBeRemovedOrHidden(new_confirm_cancel_button);
+      //createConfirmPopup("test", "test");
+      let ids = [];
+      for (const entry of selected_entries) {
+        const entry_title_link = entry.querySelector(".title > a");
+        const entry_id = Number(entry_title_link.href.split("/")[4]);
+        ids.push(entry_id);
       }
+      // selected_entries[0]
+      //   .querySelector(".edit:not([class^='rtonne-anilist-multiselect'])")
+      //   .click();
+      batchUpdate(ids, values_to_be_changed);
     };
   };
 
   new MutationObserver(() => {
-    const selected = document.querySelectorAll(
+    const selected_entries = document.querySelectorAll(
       ".rtonne-anilist-multiselect-selected"
     ).length;
-    currently_selected_label.innerHTML = `You have <b><u>${selected}</u></b> entr${
-      selected > 1 ? "ies" : "y"
+    currently_selected_label.innerHTML = `You have <b><u>${selected_entries}</u></b> entr${
+      selected_entries > 1 ? "ies" : "y"
     } selected.`;
-    if (selected > 0) {
+    if (selected_entries > 0) {
       FORM.style.display = "flex";
     } else {
       FORM.style.display = "none";
