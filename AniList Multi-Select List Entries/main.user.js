@@ -30,6 +30,7 @@
 // TODO: make actions return errors that require input to continue (maybe have option to just skip all with errors)
 // TODO: delete waitForElementToBeDeleted if not required
 // TODO: maybe make updating custom lists be automation instead of api due to rate limits
+// TODO: add validation to the API requesters so they fail properly on fetch error
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -568,16 +569,17 @@ async function setupForm() {
 
     confirm_popup_button.onclick = async () => {
       //createConfirmPopup("test", "test");
-      let ids = [];
+      let media_ids = [];
       for (const entry of selected_entries) {
         const entry_title_link = entry.querySelector(".title > a");
         const entry_id = Number(entry_title_link.href.split("/")[4]);
-        ids.push(entry_id);
+        media_ids.push(entry_id);
       }
       // selected_entries[0]
       //   .querySelector(".edit:not([class^='rtonne-anilist-multiselect'])")
       //   .click();
-      batchUpdate(ids, values_to_be_changed);
+      //batchUpdate(ids, values_to_be_changed);
+      console.log(await turnMediaIdsIntoIds(media_ids));
     };
   };
 

@@ -53,8 +53,86 @@ function waitForElementToBeRemovedOrHidden(element) {
 }
 
 /**
+ * Make a GraphQL mutation to a single entry on AniList
+ * @param {number} id The id of the entry to update. Not media_id (use turnMediaIdsIntoIds() to get the actual id). Should be an int.
+ * @param {Object} values The values to update
+ * @param {("CURRENT"|"PLANNING"|"COMPLETED"|"DROPPED"|"PAUSED"|"REPEATING")} [values.status]
+ * @param {number} [values.score]
+ * @param {number} [values.scoreRaw] Should be an int.
+ * @param {number} [values.progress] Should be an int.
+ * @param {number} [values.progressVolumes] Should be an int.
+ * @param {number} [values.repeat] Should be an int.
+ * @param {number} [values.priority] Should be an int.
+ * @param {boolean} [values.private]
+ * @param {string} [values.notes]
+ * @param {boolean} [values.hiddenFromStatusLists]
+ * @param {string[]} [values.customLists]
+ * @param {number[]} [values.advancedScores]
+ * @param {Object} [values.startedAt]
+ * @param {number} values.startedAt.year Should be an int.
+ * @param {number} values.startedAt.month Should be an int.
+ * @param {number} values.startedAt.day Should be an int.
+ * @param {Object} [values.completedAt]
+ * @param {number} values.completedAt.year Should be an int.
+ * @param {number} values.completedAt.month Should be an int.
+ * @param {number} values.completedAt.day Should be an int.
+ */
+async function singleUpdate(id, values) {
+  const query = `
+  mutation (
+    $id: Int
+    $status: MediaListStatus
+    $score: Float
+    $scoreRaw: Int
+    $progress: Int
+    $progressVolumes: Int
+    $repeat: Int
+    $priority: Int
+    $private: Boolean
+    $notes: String
+    $hiddenFromStatusLists: Boolean
+    $customLists: [String]
+    $advancedScores: [Float]
+    $startedAt: FuzzyDateInput
+    $completedAt: FuzzyDateInput
+  ) {SaveMediaListEntry(
+      id: $id
+      status: $status
+      score: $score
+      scoreRaw: $scoreRaw
+      progress: $progress
+      progressVolumes: $progressVolumes
+      repeat: $repeat
+      priority: $priority
+      private: $private
+      notes: $notes
+      hiddenFromStatusLists: $hiddenFromStatusLists
+      customLists: $customLists
+      advancedScores: $advancedScores
+      startedAt: $startedAt
+      completedAt: $completedAt
+    ) {
+      id
+      updatedAt
+    }
+  }`;
+
+  const variables = {
+    id,
+    ...values,
+  };
+
+  anilistFetch(
+    JSON.stringify({
+      query: query,
+      variables: variables,
+    })
+  );
+}
+
+/**
  * Make a GraphQL mutation to update multiple entries on AniList
- * @param {number[]} ids The ids of the entries to update. Should be ints.
+ * @param {number[]} ids The ids of the entries to update. Not media_ids (use turnMediaIdsIntoIds() to get the actual ids). Should be ints.
  * @param {Object} values The values to update
  * @param {("CURRENT"|"PLANNING"|"COMPLETED"|"DROPPED"|"PAUSED"|"REPEATING")} [values.status]
  * @param {number} [values.score]
@@ -119,10 +197,6 @@ async function batchUpdate(ids, values) {
     ...values,
   };
 
-  console.log(await turnMediaIdsIntoIds(ids, 1, 50));
-
-  return;
-
   anilistFetch(
     JSON.stringify({
       query: query,
@@ -131,12 +205,14 @@ async function batchUpdate(ids, values) {
   );
 }
 
-async function turnMediaIdsIntoIds(media_ids, page, per_page) {
+/**
+ * Turn media_ids (identifies the manga/anime itself) into ids (identifies a users instance of the manga/anime).
+ * @param {int[]} media_ids
+ * @returns {Promise<int[]>}
+ */
+async function turnMediaIdsIntoIds(media_ids) {
   const query = `query ($media_ids: [Int], $page: Int, $per_page: Int) {
     Page(page: $page, perPage: $per_page) {
-      pageInfo {
-        hasNextPage
-      }
       mediaList(mediaId_in: $media_ids, userName: "${
         window.location.href.split("/")[4]
       }", compareWithAuthList: true) {
@@ -144,40 +220,51 @@ async function turnMediaIdsIntoIds(media_ids, page, per_page) {
       }
     }
   }`;
+  const page_size = 50;
 
-  const variables = {
-    media_ids,
-    page,
-    per_page,
-  };
-
-  const response = await anilistFetch(
-    JSON.stringify({
-      query: query,
-      variables: variables,
-    })
-  );
-
-  if (response) {
-    return {
-      has_next_page: response["data"]["Page"]["pageInfo"]["hasNextPage"],
-      ids: response["data"]["Page"]["mediaList"].map((entry) => entry["id"]),
+  let ids = [];
+  for (let i = 0; i < media_ids.length; i += page_size) {
+    const page = media_ids.slice(i, i + page_size);
+    const variables = {
+      media_ids: page,
+      page: 1,
+      per_page: page_size,
     };
+    const response = await anilistFetch(
+      JSON.stringify({
+        query: query,
+        variables: variables,
+      })
+    );
+    ids.push(
+      ...response["data"]["Page"]["mediaList"].map((entry) => entry["id"])
+    );
   }
-  return {
-    has_next_page: false,
-    ids: [],
-  };
+
+  return ids;
 }
 
+/**
+ * Requests from the AniList GraphQL API.
+ * Uses a url and token specific to the website for simplicity
+ * (the user doesn't need to get a token) and for no rate limiting.
+ * @param {string} body A GraphQL query string.
+ * @returns The response json if the request works.
+ */
 async function anilistFetch(body) {
-  let url = "https://graphql.anilist.co";
+  const tokenScript = document
+    .evaluate("/html/head/script[contains(., 'window.al_token')]", document)
+    .iterateNext();
+  const token = tokenScript.innerText.substring(
+    tokenScript.innerText.indexOf('"') + 1,
+    tokenScript.innerText.lastIndexOf('"')
+  );
+
+  let url = "https://anilist.co/graphql";
   let options = {
     method: "POST",
     headers: {
-      Authorization:
-        "Bearer " +
-        "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjU2NDY4ZDQzNDcxYjhiZTAzMzAwOGMwNDhmMDgyZjZlYmU5NTZjZTU4NmYxNTg0NjdjNDljYTY5NWE4OGY1NTA1MzA3YWM2NDBmZGJhMzA2In0.eyJhdWQiOiIxODc0NCIsImp0aSI6IjU2NDY4ZDQzNDcxYjhiZTAzMzAwOGMwNDhmMDgyZjZlYmU5NTZjZTU4NmYxNTg0NjdjNDljYTY5NWE4OGY1NTA1MzA3YWM2NDBmZGJhMzA2IiwiaWF0IjoxNzE1ODk4MTY3LCJuYmYiOjE3MTU4OTgxNjcsImV4cCI6MTc0NzQzNDE2Nywic3ViIjoiMzU0MjU5Iiwic2NvcGVzIjpbXX0.gYqKAN0u61BHJNWE58xj7iek0V-CxJantH8_w1esW5ZZkCXOhEuFvU4JN5wbXqBduQK733twXHOrA3pcM_S5t1XxvArhXBtPJwStebx82qRuNloRaAHoKRZZLpotsafrBEBUctjpaLYutXQ_--Dh3iK-4HZHQGuawoE0C1v8aHZdsaPNvn-2wlcSBRpHRUJ0DwtoBHiJmUR8RSMWR1p3KnVbtLn1u2qEg5ct6amTZJA7IHLla5IBPcdt697eXNhEsn16Z68ILH_iky1ajaYjOo45JHIavc1l1LgdV8CpIf1_SLfgtIH6FYgiLeux_HFoZd860hbEVOfbcHx-TodNmEuq7AoQXDVsbcZLkNBUbwgtcseC8M7uePYvn081HgiLvJoEW4Z0QX_Bp7DGqfoOpNPuNRCCDubYdb5OjUoC5s6wSwD4vdlAINJOiKABu_FPcBYSY5ELjB94Z2-v5dPxD2ht4hHmrLT8MIcgipz7AaCGD_3kascYCbFSnJVZbvVh39HElqSp35ijN6NpJqg7l7wBPn1nkz9cCQT3_Qenh9zksSFKfZSe8PUT_SWGdL8YelPe9A0fLcz-n0-qOKYYlhW9qIc5lYQ-OqH0AAfpiRQvbuDYYDpQit8H4gcEIi0jaR93DeAK3LhsT34c-_l65e6qGhL5-Kr4T2EALvahKeE",
+      "X-Csrf-Token": token,
       "Content-Type": "application/json",
       Accept: "application/json",
     },
@@ -195,7 +282,9 @@ async function anilistFetch(body) {
   }
 
   function handleError(error) {
-    alert("Error, check console");
+    alert(
+      "An error ocurred when requesting from the AniList API. Check the console for more details."
+    );
     console.error(error);
   }
 
