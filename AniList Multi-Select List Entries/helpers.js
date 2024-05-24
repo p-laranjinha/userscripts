@@ -53,6 +53,41 @@ function waitForElementToBeRemovedOrHidden(element) {
 }
 
 /**
+ *
+ * @param {HTMLElement} element The element of the anime/manga entry
+ * @returns {Promise<{custom_lists: {name: string, checked: boolean}[], is_favourite: boolean}>}
+ */
+async function getDataFromElementDialog(element) {
+  let data = {};
+  const edit_button = element.querySelector(
+    ".edit:not([class^='rtonne-anilist-multiselect'])"
+  );
+  edit_button.click();
+  const [close_dialog_button] = await waitForElements(".el-dialog__headerbtn");
+
+  const [custom_lists_container] = await waitForElements(".custom-lists");
+  const custom_lists_checkboxes =
+    custom_lists_container.querySelectorAll(".checkbox");
+  data.custom_lists = [];
+  for (const checkbox of custom_lists_checkboxes) {
+    let custom_list = {};
+    custom_list.name = checkbox
+      .querySelector(".el-checkbox__label")
+      .innerText.trim();
+    custom_list.checked = checkbox
+      .querySelector(".el-checkbox")
+      .classList.contains("is-checked");
+    data.custom_lists.push(custom_list);
+  }
+
+  const favourite_button = document.querySelector(".favourite");
+  data.is_favourite = favourite_button.classList.contains("isFavourite");
+
+  close_dialog_button.click();
+  return data;
+}
+
+/**
  * Make a GraphQL mutation to a single entry on AniList
  * @param {number} id The id of the entry to update. Not media_id (use turnMediaIdsIntoIds() to get the actual id). Should be an int.
  * @param {Object} values The values to update
@@ -77,7 +112,7 @@ function waitForElementToBeRemovedOrHidden(element) {
  * @param {number} values.completedAt.month Should be an int.
  * @param {number} values.completedAt.day Should be an int.
  */
-async function singleUpdate(id, values) {
+async function updateEntry(id, values) {
   const query = `
   mutation (
     $id: Int
@@ -154,7 +189,7 @@ async function singleUpdate(id, values) {
  * @param {number} values.completedAt.month Should be an int.
  * @param {number} values.completedAt.day Should be an int.
  */
-async function batchUpdate(ids, values) {
+async function batchUpdateEntries(ids, values) {
   const query = `
   mutation (
     $ids: [Int]
@@ -195,6 +230,60 @@ async function batchUpdate(ids, values) {
   const variables = {
     ids,
     ...values,
+  };
+
+  anilistFetch(
+    JSON.stringify({
+      query: query,
+      variables: variables,
+    })
+  );
+}
+
+/**
+ * Make a GraphQL mutation to toggle the favourite status for an entry on AniList
+ * @param {{animeId: number} | {mangaId: number}} id Should be ints.
+ */
+async function toggleFavouriteForEntry(id) {
+  const query = `
+  mutation {ToggleFavourite(
+    ${id.animeId ? "animeId: " + id.animeId : ""}
+    ${id.mangaId ? "mangaId: " + id.mangaId : ""}
+    ) {
+      anime {
+        pageInfo {
+          total
+        }
+      }
+    }
+  }
+  `;
+
+  anilistFetch(
+    JSON.stringify({
+      query: query,
+      variables: {},
+    })
+  );
+}
+
+/**
+ * Make a GraphQL mutation to delete an entry on AniList
+ * @param {number} id Should be an int.
+ */
+async function deleteEntry(id) {
+  const query = `
+  mutation (
+    $id: Int
+  ) {DeleteMediaListEntry(
+        id: $id
+    ) {
+      deleted
+    }
+  }`;
+
+  const variables = {
+    id,
   };
 
   anilistFetch(

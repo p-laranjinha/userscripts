@@ -11,7 +11,6 @@
 // @grant       GM.addStyle
 // @require     components.js
 // @require     helpers.js
-// @require     actions.js
 // @resource    GLOBAL_CSS global.css
 // ==/UserScript==
 
@@ -191,26 +190,12 @@ async function setupForm() {
 
   document.body.className +=
     " rtonne-anilist-multiselect-modal-hidden rtonne-anilist-multiselect-dialog-hidden";
-  const first_entry_edit_button = document.querySelector(
-    ".entry-card .edit:not([class^='rtonne-anilist-multiselect'])"
-  );
-  first_entry_edit_button.click();
-  const [first_entry_dialog_close_button] = await waitForElements(
-    ".el-dialog__headerbtn"
-  );
-  const [first_entry_dialog_custom_lists_container] = await waitForElements(
-    ".custom-lists"
-  );
-  const first_entry_dialog_custom_lists_labels =
-    first_entry_dialog_custom_lists_container.querySelectorAll(
-      ".el-checkbox__label"
-    );
-  first_entry_dialog_close_button.click();
+  // Sending document to getCustomListsFromElement should use the first entry
+  const custom_lists = (
+    await getDataFromElementDialog(document)
+  ).custom_lists.map((custom_list) => custom_list.name);
   document.body.classList.remove("rtonne-anilist-multiselect-modal-hidden");
   document.body.classList.remove("rtonne-anilist-multiselect-dialog-hidden");
-  const custom_lists = Array.from(first_entry_dialog_custom_lists_labels).map(
-    (label) => label.innerText.trim()
-  );
 
   // Create the form
   FORM = document.createElement("div");
@@ -523,8 +508,12 @@ async function setupForm() {
       if (custom_lists.length > 0) {
         for (let i = 0; i < custom_lists.length; i++) {
           if (!custom_lists_checkboxes[i].indeterminate) {
+            if (!values_to_be_changed.customLists) {
+              values_to_be_changed.customLists = [];
+            }
             if (custom_lists_checkboxes[i].checked) {
               action_list += `<li>Add to the <b>${custom_lists[i]}</b> <u>Custom List</u>.</li>`;
+              values_to_be_changed.customLists.push(custom_lists[i]);
             } else {
               action_list += `<li>Remove from the <b>${custom_lists[i]}</b> <u>Custom List</u>.</li>`;
             }
@@ -533,26 +522,33 @@ async function setupForm() {
         if (!hide_from_status_list_checkbox.indeterminate) {
           if (hide_from_status_list_checkbox.checked) {
             action_list += `<li><u><b>Hide</b> from status lists.</u></li>`;
+            values_to_be_changed.hiddenFromStatusLists = true;
           } else {
             action_list += `<li><u><b>Show</b> on status lists.</u></li>`;
+            values_to_be_changed.hiddenFromStatusLists = false;
           }
         }
       }
       if (!private_checkbox.indeterminate) {
         if (private_checkbox.checked) {
           action_list += `<li>Set as <u><b>Private</b></u>.</li>`;
+          values_to_be_changed.private = true;
         } else {
           action_list += `<li>Set as <u><b>Public</b></u>.</li>`;
+          values_to_be_changed.private = false;
         }
       }
       if (!favourite_checkbox.indeterminate) {
         if (favourite_checkbox.checked) {
           action_list += `<li><b>Add</b> to <u>Favourites</u>.</li>`;
+          values_to_be_changed.favourite = true;
         } else {
           action_list += `<li><b>Remove</b> from <u>Favourites</u>.</li>`;
+          values_to_be_changed.favourite = false;
         }
       }
     } else {
+      values_to_be_changed.delete = true;
       action_list += `<li><u><b>Delete</b></u>.</li>`;
     }
 
@@ -568,18 +564,78 @@ async function setupForm() {
     );
 
     confirm_popup_button.onclick = async () => {
-      //createConfirmPopup("test", "test");
       let media_ids = [];
       for (const entry of selected_entries) {
         const entry_title_link = entry.querySelector(".title > a");
         const entry_id = Number(entry_title_link.href.split("/")[4]);
         media_ids.push(entry_id);
       }
-      // selected_entries[0]
-      //   .querySelector(".edit:not([class^='rtonne-anilist-multiselect'])")
-      //   .click();
-      //batchUpdate(ids, values_to_be_changed);
-      console.log(await turnMediaIdsIntoIds(media_ids));
+      const ids = await turnMediaIdsIntoIds(media_ids);
+      let dialog_data = [];
+
+      if (values_to_be_changed.delete) {
+        for (let i = 0; i < selected_entries.length; i++) {
+          await deleteEntry(ids[i]);
+        }
+        return;
+      }
+      if (values_to_be_changed.favourite !== undefined) {
+        for (let i = 0; i < selected_entries.length; i++) {
+          if (!dialog_data[i]) {
+            dialog_data[i] = await getDataFromElementDialog(
+              selected_entries[i]
+            );
+          }
+          if (values_to_be_changed.favourite !== dialog_data[i].is_favourite) {
+            if (is_list_anime) {
+              await toggleFavouriteForEntry({ animeId: media_ids[i] });
+            } else {
+              await toggleFavouriteForEntry({ mangaId: media_ids[i] });
+            }
+          }
+        }
+      }
+
+      // Adding/removing from custom lists requires more meddling
+      if (custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate)) {
+        // If all custom lists have been decided no further processing is required
+        if (
+          custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
+        ) {
+          for (let i = 0; i < selected_entries.length; i++) {
+            await updateEntry(ids[i], values_to_be_changed);
+          }
+          return;
+        }
+        for (let i = 0; i < selected_entries.length; i++) {
+          let final_custom_lists = [];
+          if (!dialog_data[i]) {
+            dialog_data[i] = await getDataFromElementDialog(
+              selected_entries[i]
+            );
+          }
+          let entry_custom_lists = dialog_data[i].custom_lists;
+          for (let j = 0; j < custom_lists.length; j++) {
+            if (!custom_lists_checkboxes[j].indeterminate) {
+              if (custom_lists_checkboxes[j].checked) {
+                final_custom_lists.push(custom_lists[j]);
+              }
+            } else {
+              if (entry_custom_lists[j].checked) {
+                final_custom_lists.push(custom_lists[j]);
+              }
+            }
+          }
+          console.log(entry_custom_lists, final_custom_lists);
+          await updateEntry(ids[i], {
+            ...values_to_be_changed,
+            customLists: final_custom_lists,
+          });
+        }
+        return;
+      }
+
+      batchUpdateEntries(ids, values_to_be_changed);
     };
   };
 
