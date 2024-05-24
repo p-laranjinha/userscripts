@@ -429,7 +429,7 @@ function createDangerButton(container, text) {
 }
 
 /**
- * Creates a popup.
+ * Creates a confirmation popup.
  * @param {string} title_text A text/html title for the popup.
  * @param {string} message_text The text/html content of the popup.
  * @returns The confirm button of the popup.
@@ -492,4 +492,131 @@ function createConfirmPopup(title_text, message_text) {
   });
 
   return confirm_button;
+}
+
+/**
+ * Creates an updatable cancel popup.
+ * @param {string} initial_title
+ * @param {HTMLElement} initial_content
+ * @returns The two elements that close the popup with the click event, two functions to update the popup, and a function to close the popup.
+ */
+function createUpdatableCancelPopup(initial_title, initial_content) {
+  const modal = document.createElement("div");
+  modal.className = "v-modal";
+  modal.style.zIndex = "99999";
+  document.body.append(modal);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "el-message-box__wrapper";
+  wrapper.style.zIndex = "100000";
+  document.body.append(wrapper);
+  const container = document.createElement("div");
+  container.className = "el-message-box";
+  wrapper.append(container);
+
+  const header = document.createElement("div");
+  header.className = "el-message-box__header";
+  container.append(header);
+  const title_element = document.createElement("div");
+  title_element.className = "el-message-box__title";
+  title_element.innerHTML = `<span>${initial_title}</span>`;
+  header.append(title_element);
+
+  const content_element = document.createElement("div");
+  content_element.className = "el-message-box__content";
+  container.append(content_element);
+  const message = document.createElement("div");
+  message.className = "el-message-box__message";
+  message.replaceChildren(initial_content);
+  content_element.append(message);
+
+  const buttons = document.createElement("div");
+  buttons.className = "el-message-box__btns";
+  container.append(buttons);
+  const cancel_button = createCancelButton(buttons, "Cancel");
+
+  function closeDialog() {
+    modal.remove();
+    wrapper.remove();
+  }
+
+  // Used .addEventListener instead of .onclick
+  // so either can be used outside this function
+  wrapper.addEventListener("click", () => {
+    closeDialog();
+  });
+  cancel_button.addEventListener("click", () => {
+    closeDialog();
+  });
+
+  function changeTitle(title) {
+    title_element.innerHTML = `<span>${title}</span>`;
+  }
+
+  function changeContent(content) {
+    message.replaceChildren(content);
+  }
+
+  return {
+    dialog_wrapper: wrapper,
+    dialog_cancel_button: cancel_button,
+    changeDialogTitle: changeTitle,
+    changeDialogContent: changeContent,
+    closeDialog,
+  };
+}
+
+/**
+ * Creates entry specific content to add to a dialog.
+ * @param {string} text Text to display to the left of the cover.
+ * @param {string} cover The cover to add as a background-image style.
+ * @param {number} current_index The index of the current entry being show.
+ * @param {number} total The total entries going to be shown.
+ * @returns
+ */
+function createEntryDialogContent(text, cover, current_index, total) {
+  const content = document.createElement("div");
+  content.style.display = "flex";
+  content.style.flexWrap = "wrap";
+  content.style.flexDirection = "row";
+  content.style.gap = "10px";
+  content.style.justifyContent = "center";
+  content.style.alignItems = "center";
+  content.style.textAlign = "center";
+  const content_text = document.createElement("span");
+  content_text.innerHTML = text;
+  content_text.style.flexGrow = "1";
+  content.append(content_text);
+  const content_image = document.createElement("div");
+  content_image.style.backgroundImage = cover;
+  content_image.style.backgroundPosition = "50%";
+  content_image.style.backgroundRepeat = "no-repeat";
+  content_image.style.backgroundSize = "cover";
+  content_image.style.borderRadius = "3px";
+  content_image.style.minHeight = "210px";
+  content_image.style.minWidth = "150px";
+  content.append(content_image);
+  const bar = document.createElement("div");
+  bar.style.width = "100%";
+  bar.style.display = "flex";
+  bar.style.justifyContent = "center";
+  bar.style.alignItems = "center";
+  bar.style.textAlign = "center";
+  bar.style.background = `linear-gradient(90deg, rgb(var(--color-blue)) ${Math.floor(
+    (current_index / total) * 100
+  )}%, rgb(var(--color-background)) 0)`;
+  bar.style.borderRadius = "3px";
+  content.append(bar);
+  const bar_text = document.createElement("span");
+  bar_text.innerText = `${current_index} / ${total}`;
+  bar_text.style.textShadow = `2px 0 rgb(var(--color-background)),
+                          -2px 0 rgb(var(--color-background)),
+                          0 2px rgb(var(--color-background)),
+                          0 -2px rgb(var(--color-background)),
+                          1px 1px rgb(var(--color-background)),
+                          -1px -1px rgb(var(--color-background)),
+                          1px -1px rgb(var(--color-background)),
+                          -1px 1px rgb(var(--color-background))`;
+  bar.appendChild(bar_text);
+  return content;
 }

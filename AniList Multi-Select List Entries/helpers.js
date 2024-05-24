@@ -80,7 +80,7 @@ async function getDataFromElementDialog(element) {
     data.custom_lists.push(custom_list);
   }
 
-  const favourite_button = document.querySelector(".favourite");
+  const [favourite_button] = await waitForElements(".favourite");
   data.is_favourite = favourite_button.classList.contains("isFavourite");
 
   close_dialog_button.click();

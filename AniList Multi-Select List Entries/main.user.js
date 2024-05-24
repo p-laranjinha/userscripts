@@ -25,11 +25,11 @@
 // TODO: add info explaining what indeterminate checkboxes are
 // TODO: add a warning when an error occurs (its not getting the custom lists, for example)
 // TODO: make advanced scores work
-// TODO: make a version that uses the API instead of automated clicks (example:https://greasyfork.org/en/scripts/460393-entry-deleter)
 // TODO: make actions return errors that require input to continue (maybe have option to just skip all with errors)
 // TODO: delete waitForElementToBeDeleted if not required
-// TODO: maybe make updating custom lists be automation instead of api due to rate limits
 // TODO: add validation to the API requesters so they fail properly on fetch error
+// TODO: fix the indeterminate checkbox look
+// TODO: standardize either using dialog or popup or message box
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -564,78 +564,157 @@ async function setupForm() {
     );
 
     confirm_popup_button.onclick = async () => {
-      let media_ids = [];
-      for (const entry of selected_entries) {
-        const entry_title_link = entry.querySelector(".title > a");
-        const entry_id = Number(entry_title_link.href.split("/")[4]);
-        media_ids.push(entry_id);
-      }
-      const ids = await turnMediaIdsIntoIds(media_ids);
-      let dialog_data = [];
+      // Content is in yet another function so I can do stuff after it returns anywhere
+      await (async () => {
+        let is_cancelled = false;
+        const {
+          dialog_wrapper,
+          dialog_cancel_button,
+          changeDialogTitle,
+          changeDialogContent,
+          closeDialog,
+        } = createUpdatableCancelPopup("Processing the request...", "");
+        dialog_wrapper.onclick = dialog_cancel_button.onclick = () => {
+          is_cancelled = true;
+        };
 
-      if (values_to_be_changed.delete) {
-        for (let i = 0; i < selected_entries.length; i++) {
-          await deleteEntry(ids[i]);
+        let media_ids = [];
+        for (const entry of selected_entries) {
+          const entry_title_link = entry.querySelector(".title > a");
+          const entry_id = Number(entry_title_link.href.split("/")[4]);
+          media_ids.push(entry_id);
         }
-        return;
-      }
-      if (values_to_be_changed.favourite !== undefined) {
-        for (let i = 0; i < selected_entries.length; i++) {
-          if (!dialog_data[i]) {
-            dialog_data[i] = await getDataFromElementDialog(
-              selected_entries[i]
+        const ids = await turnMediaIdsIntoIds(media_ids);
+        let dialog_data = [];
+
+        if (values_to_be_changed.delete) {
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+            changeDialogContent(
+              createEntryDialogContent(
+                `Deleting: <b>${selected_entries[i]
+                  .querySelector(".title > a")
+                  .innerText.trim()}</b>`,
+                selected_entries[i].querySelector(".image").style
+                  .backgroundImage,
+                i + 1,
+                selected_entries.length
+              )
             );
+            await deleteEntry(ids[i]);
           }
-          if (values_to_be_changed.favourite !== dialog_data[i].is_favourite) {
-            if (is_list_anime) {
-              await toggleFavouriteForEntry({ animeId: media_ids[i] });
-            } else {
-              await toggleFavouriteForEntry({ mangaId: media_ids[i] });
-            }
-          }
-        }
-      }
-
-      // Adding/removing from custom lists requires more meddling
-      if (custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate)) {
-        // If all custom lists have been decided no further processing is required
-        if (
-          custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
-        ) {
-          for (let i = 0; i < selected_entries.length; i++) {
-            await updateEntry(ids[i], values_to_be_changed);
-          }
+          closeDialog();
           return;
         }
-        for (let i = 0; i < selected_entries.length; i++) {
-          let final_custom_lists = [];
-          if (!dialog_data[i]) {
-            dialog_data[i] = await getDataFromElementDialog(
-              selected_entries[i]
-            );
-          }
-          let entry_custom_lists = dialog_data[i].custom_lists;
-          for (let j = 0; j < custom_lists.length; j++) {
-            if (!custom_lists_checkboxes[j].indeterminate) {
-              if (custom_lists_checkboxes[j].checked) {
-                final_custom_lists.push(custom_lists[j]);
-              }
-            } else {
-              if (entry_custom_lists[j].checked) {
-                final_custom_lists.push(custom_lists[j]);
+        if (values_to_be_changed.favourite !== undefined) {
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+            if (!dialog_data[i]) {
+              dialog_data[i] = await getDataFromElementDialog(
+                selected_entries[i]
+              );
+            }
+            if (
+              values_to_be_changed.favourite !== dialog_data[i].is_favourite
+            ) {
+              changeDialogContent(
+                createEntryDialogContent(
+                  `${
+                    values_to_be_changed.favourite
+                      ? "Adding to favourites"
+                      : "Removing from favourites"
+                  }: <b>${selected_entries[i]
+                    .querySelector(".title > a")
+                    .innerText.trim()}</b>`,
+                  selected_entries[i].querySelector(".image").style
+                    .backgroundImage,
+                  i + 1,
+                  selected_entries.length
+                )
+              );
+              if (is_list_anime) {
+                await toggleFavouriteForEntry({ animeId: media_ids[i] });
+              } else {
+                await toggleFavouriteForEntry({ mangaId: media_ids[i] });
               }
             }
           }
-          console.log(entry_custom_lists, final_custom_lists);
-          await updateEntry(ids[i], {
-            ...values_to_be_changed,
-            customLists: final_custom_lists,
-          });
         }
-        return;
-      }
 
-      batchUpdateEntries(ids, values_to_be_changed);
+        // Adding/removing from custom lists requires more meddling
+        if (
+          custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate)
+        ) {
+          // If all custom lists have been decided no further processing is required
+          if (
+            custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
+          ) {
+            for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+              changeDialogContent(
+                createEntryDialogContent(
+                  `Updating: <b>${selected_entries[i]
+                    .querySelector(".title > a")
+                    .innerText.trim()}</b>`,
+                  selected_entries[i].querySelector(".image").style
+                    .backgroundImage,
+                  i + 1,
+                  selected_entries.length
+                )
+              );
+              await updateEntry(ids[i], values_to_be_changed);
+            }
+            closeDialog();
+            return;
+          }
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+            changeDialogContent(
+              createEntryDialogContent(
+                `Updating: <b>${selected_entries[i]
+                  .querySelector(".title > a")
+                  .innerText.trim()}</b>`,
+                selected_entries[i].querySelector(".image").style
+                  .backgroundImage,
+                i + 1,
+                selected_entries.length
+              )
+            );
+            let final_custom_lists = [];
+            if (!dialog_data[i]) {
+              dialog_data[i] = await getDataFromElementDialog(
+                selected_entries[i]
+              );
+            }
+            let entry_custom_lists = dialog_data[i].custom_lists;
+            for (let j = 0; j < custom_lists.length; j++) {
+              if (!custom_lists_checkboxes[j].indeterminate) {
+                if (custom_lists_checkboxes[j].checked) {
+                  final_custom_lists.push(custom_lists[j]);
+                }
+              } else {
+                if (entry_custom_lists[j].checked) {
+                  final_custom_lists.push(custom_lists[j]);
+                }
+              }
+            }
+            await updateEntry(ids[i], {
+              ...values_to_be_changed,
+              customLists: final_custom_lists,
+            });
+          }
+          closeDialog();
+          return;
+        }
+
+        changeDialogContent(
+          "Updating all the entries at once. Not possible to cancel."
+        );
+        await batchUpdateEntries(ids, values_to_be_changed);
+        closeDialog();
+      })();
+
+      const finished_popup_button = createConfirmPopup(
+        "Done!",
+        "The request has finished. Do you want to refresh?"
+      );
+      finished_popup_button.onclick = () => window.location.reload();
     };
   };
 
