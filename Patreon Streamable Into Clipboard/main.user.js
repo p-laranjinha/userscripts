@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.patreon.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=patreon.com
-// @version     1.0
+// @version     1.1
 // @author      Rtonne
 // @description Adds a button to turn patreon streamable posts into custom text on your clipboard
 // @run-at      document-end
@@ -13,7 +13,7 @@
 
 function getClipboardContent(post_title, post_url, streamable_url) {
   return `
-### [${post_title}](${post_url})
+### ${post_title} [](${post_url})
 
 - [ ] :LiEye:
 
