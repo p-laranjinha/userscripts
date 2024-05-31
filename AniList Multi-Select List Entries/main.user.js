@@ -60,7 +60,6 @@ const url_regex =
 // Using observer to run script whenever the body changes
 // because anilist doesn't reload when changing page
 const observer = new MutationObserver(async () => {
-  console.log("observer");
   try {
     new_url = window.location.href;
 
@@ -584,7 +583,7 @@ async function setupForm() {
           const entry_id = Number(entry_title_link.href.split("/")[4]);
           media_ids.push(entry_id);
         }
-        const ids = await turnMediaIdsIntoIds(media_ids);
+        const { ids } = await turnMediaIdsIntoIds(media_ids);
         let dialog_data = [];
 
         if (values_to_be_changed.delete) {

@@ -1,4 +1,9 @@
 /**
+ * @typedef {{message: string, status: number, locations: {line: number, column: number}[]}} AniListError
+ * @typedef {{message: string} | AniListError} FetchError
+ */
+
+/**
  * Uses a MutationObserver to wait until the element we want exists.
  * This function is required because elements take a while to appear sometimes.
  * https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
@@ -55,36 +60,45 @@ function waitForElementToBeRemovedOrHidden(element) {
 /**
  *
  * @param {HTMLElement} element The element of the anime/manga entry
- * @returns {Promise<{custom_lists: {name: string, checked: boolean}[], is_favourite: boolean}>}
+ * @returns {Promise<{custom_lists: {name: string, checked: boolean}[], is_favourite: boolean} | {errors: {message: Error}[]}>}
  */
 async function getDataFromElementDialog(element) {
-  let data = {};
-  const edit_button = element.querySelector(
-    ".edit:not([class^='rtonne-anilist-multiselect'])"
-  );
-  edit_button.click();
-  const [close_dialog_button] = await waitForElements(".el-dialog__headerbtn");
+  try {
+    let data = {};
+    const edit_button = element.querySelector(
+      ".edit:not([class^='rtonne-anilist-multiselect'])"
+    );
+    edit_button.click();
+    const [close_dialog_button] = await waitForElements(
+      ".el-dialog__headerbtn"
+    );
 
-  const [custom_lists_container] = await waitForElements(".custom-lists");
-  const custom_lists_checkboxes =
-    custom_lists_container.querySelectorAll(".checkbox");
-  data.custom_lists = [];
-  for (const checkbox of custom_lists_checkboxes) {
-    let custom_list = {};
-    custom_list.name = checkbox
-      .querySelector(".el-checkbox__label")
-      .innerText.trim();
-    custom_list.checked = checkbox
-      .querySelector(".el-checkbox")
-      .classList.contains("is-checked");
-    data.custom_lists.push(custom_list);
+    // Get the custom lists that exist
+    const [custom_lists_container] = await waitForElements(".custom-lists");
+    const custom_lists_checkboxes =
+      custom_lists_container.querySelectorAll(".checkbox");
+    data.custom_lists = [];
+    for (const checkbox of custom_lists_checkboxes) {
+      let custom_list = {};
+      custom_list.name = checkbox
+        .querySelector(".el-checkbox__label")
+        .innerText.trim();
+      custom_list.checked = checkbox
+        .querySelector(".el-checkbox")
+        .classList.contains("is-checked");
+      data.custom_lists.push(custom_list);
+    }
+
+    // Get if the entry is on favourites
+    const [favourite_button] = await waitForElements(".favourite");
+    data.is_favourite = favourite_button.classList.contains("isFavourite");
+
+    close_dialog_button.click();
+    return data;
+  } catch (e) {
+    console.log(e);
+    return { errors: [{ message: e }] };
   }
-
-  const [favourite_button] = await waitForElements(".favourite");
-  data.is_favourite = favourite_button.classList.contains("isFavourite");
-
-  close_dialog_button.click();
-  return data;
 }
 
 /**
@@ -111,6 +125,7 @@ async function getDataFromElementDialog(element) {
  * @param {number} values.completedAt.year Should be an int.
  * @param {number} values.completedAt.month Should be an int.
  * @param {number} values.completedAt.day Should be an int.
+ * @returns {Promise<{errors: FetchError[]} | void>}
  */
 async function updateEntry(id, values) {
   const query = `
@@ -157,12 +172,16 @@ async function updateEntry(id, values) {
     ...values,
   };
 
-  anilistFetch(
+  const { errors } = await anilistFetch(
     JSON.stringify({
       query: query,
       variables: variables,
     })
   );
+  //TODO maybe get all media fields on update to check if they're the same, as validation
+  if (errors) {
+    return { errors };
+  }
 }
 
 /**
@@ -188,6 +207,7 @@ async function updateEntry(id, values) {
  * @param {number} values.completedAt.year Should be an int.
  * @param {number} values.completedAt.month Should be an int.
  * @param {number} values.completedAt.day Should be an int.
+ * @returns {Promise<{errors: FetchError[]} | void>}
  */
 async function batchUpdateEntries(ids, values) {
   const query = `
@@ -232,17 +252,22 @@ async function batchUpdateEntries(ids, values) {
     ...values,
   };
 
-  anilistFetch(
+  const { errors } = await anilistFetch(
     JSON.stringify({
       query: query,
       variables: variables,
     })
   );
+  //TODO maybe get all media fields on update to check if they're the same, as validation
+  if (errors) {
+    return { errors };
+  }
 }
 
 /**
  * Make a GraphQL mutation to toggle the favourite status for an entry on AniList
  * @param {{animeId: number} | {mangaId: number}} id Should be ints.
+ * @returns {Promise<{errors: FetchError[]} | void>}
  */
 async function toggleFavouriteForEntry(id) {
   const query = `
@@ -250,26 +275,33 @@ async function toggleFavouriteForEntry(id) {
     ${id.animeId ? "animeId: " + id.animeId : ""}
     ${id.mangaId ? "mangaId: " + id.mangaId : ""}
     ) {
-      anime {
-        pageInfo {
-          total
+      ${id.mangaId ? "manga" : "anime"} {
+        nodes {
+          id
         }
       }
     }
   }
   `;
 
-  anilistFetch(
+  const { errors } = await anilistFetch(
     JSON.stringify({
       query: query,
       variables: {},
     })
   );
+  // Not doing extra validation because the data returned depends on if its toggled on or off.
+  // We could check if the entry id has been added/removed to the node list but if we have more
+  // than 50 favourites I think we would need to query multiple pages, and I don't feel like doing it.
+  if (errors) {
+    return { errors };
+  }
 }
 
 /**
  * Make a GraphQL mutation to delete an entry on AniList
  * @param {number} id Should be an int.
+ * @returns {Promise<{errors: FetchError[]} | void>}
  */
 async function deleteEntry(id) {
   const query = `
@@ -286,18 +318,24 @@ async function deleteEntry(id) {
     id,
   };
 
-  anilistFetch(
+  const { data, errors } = await anilistFetch(
     JSON.stringify({
       query: query,
       variables: variables,
     })
   );
+
+  if (errors) {
+    return { errors };
+  } else if (data && !data["DeleteMediaListEntry"]["deleted"]) {
+    return { errors: [{ message: "Entry was not deleted." }] };
+  }
 }
 
 /**
  * Turn media_ids (identifies the manga/anime itself) into ids (identifies a users instance of the manga/anime).
  * @param {int[]} media_ids
- * @returns {Promise<int[]>}
+ * @returns {Promise<{ids: int[]} | {ids: int[], errors: FetchError[]}>}
  */
 async function turnMediaIdsIntoIds(media_ids) {
   const query = `query ($media_ids: [Int], $page: Int, $per_page: Int) {
@@ -311,6 +349,7 @@ async function turnMediaIdsIntoIds(media_ids) {
   }`;
   const page_size = 50;
 
+  let total_errors = [];
   let ids = [];
   for (let i = 0; i < media_ids.length; i += page_size) {
     const page = media_ids.slice(i, i + page_size);
@@ -319,18 +358,22 @@ async function turnMediaIdsIntoIds(media_ids) {
       page: 1,
       per_page: page_size,
     };
-    const response = await anilistFetch(
+    const { data, errors } = await anilistFetch(
       JSON.stringify({
         query: query,
         variables: variables,
       })
     );
-    ids.push(
-      ...response["data"]["Page"]["mediaList"].map((entry) => entry["id"])
-    );
+    if (errors) {
+      total_errors.join(errors);
+      continue;
+    }
+    ids.push(...data["Page"]["mediaList"].map((entry) => entry["id"]));
   }
-
-  return ids;
+  if (total_errors.length === 0) {
+    return { ids };
+  }
+  return { ids, errors: total_errors };
 }
 
 /**
@@ -338,7 +381,7 @@ async function turnMediaIdsIntoIds(media_ids) {
  * Uses a url and token specific to the website for simplicity
  * (the user doesn't need to get a token) and for no rate limiting.
  * @param {string} body A GraphQL query string.
- * @returns The response json if the request works.
+ * @returns A dict with the json data or the errors.
  */
 async function anilistFetch(body) {
   const tokenScript = document
@@ -366,19 +409,30 @@ async function anilistFetch(body) {
     });
   }
 
-  function handleData(data) {
-    return data;
+  /**
+   * @param {{data: any}} response
+   */
+  function handleData(response) {
+    return response;
   }
 
-  function handleError(error) {
-    alert(
-      "An error ocurred when requesting from the AniList API. Check the console for more details."
-    );
-    console.error(error);
+  /**
+   * @param {{data: {[_: string]: null}, errors: AniListError[]} | Error} e
+   * @returns {{errors: FetchError[]}}
+   */
+  function handleErrors(e) {
+    // alert(
+    //   "An error ocurred when requesting from the AniList API. Check the console for more details."
+    // );
+    console.error(e);
+    if (e instanceof Error) {
+      return { errors: [{ message: e.toString() }] };
+    }
+    return { errors: e.errors };
   }
 
   return await fetch(url, options)
     .then(handleResponse)
     .then(handleData)
-    .catch(handleError);
+    .catch(handleErrors);
 }
