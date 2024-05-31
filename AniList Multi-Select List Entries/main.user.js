@@ -14,8 +14,6 @@
 // @resource    GLOBAL_CSS global.css
 // ==/UserScript==
 
-// TODO: make buttons work for list views
-// TODO: check how the style affect other people's lists
 // TODO: add scrollbar to dropdown
 // TODO: make it work for different color themes
 // TODO: see if changing the account color changes input colors
