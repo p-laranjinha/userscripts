@@ -25,6 +25,7 @@
 // TODO: delete waitForElementToBeDeleted if not required
 // TODO: add validation to the API requesters so they fail properly on fetch error
 // TODO: standardize either using dialog or popup or message box
+// TODO: check if we can send empty mutation requests for stuff like dates
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -398,6 +399,29 @@ async function setupForm() {
   const deselect_all_button = createDangerButton(FORM, "Deselect All Entries");
 
   const confirm_button = createButton(FORM, "Confirm");
+  new MutationObserver(() => {
+    if (
+      delete_checkbox.checked ||
+      start_date_enabled_checkbox.checked ||
+      score_enabled_checkbox.checked ||
+      start_date_enabled_checkbox.checked ||
+      finish_date_enabled_checkbox.checked ||
+      notes_enabled_checkbox.checked ||
+      (custom_lists.length > 0 &&
+        (custom_lists_checkboxes.some((e) => e.checked) ||
+          !hide_from_status_list_checkbox.indeterminate)) ||
+      !private_checkbox.indeterminate ||
+      !favourite_checkbox.indeterminate
+    ) {
+      confirm_button.style.display = "unset";
+    } else {
+      confirm_button.style.display = "none";
+    }
+  }).observe(FORM, {
+    childList: true,
+    subtree: true,
+    attributeFilter: ["class"],
+  });
 
   const currently_selected_label = document.createElement("label");
   currently_selected_label.style.alignSelf = "center";
