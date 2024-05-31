@@ -16,7 +16,6 @@
 
 // TODO: add scrollbar to dropdown
 // TODO: check what validation errors might occur (like having finish date before start date)
-// TODO: make number inputs only allow "steppable" values
 // TODO: see if anything gets saved even when deleted (to know if other actions have to be done when deletion is selected)
 // TODO: add info explaining what indeterminate checkboxes are
 // TODO: add a warning when an error occurs (its not getting the custom lists, for example)
@@ -26,6 +25,7 @@
 // TODO: add validation to the API requesters so they fail properly on fetch error
 // TODO: standardize either using dialog or popup or message box
 // TODO: check if we can send empty mutation requests for stuff like dates
+// TODO: maybe put all/most inline styling of components in the css file
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);

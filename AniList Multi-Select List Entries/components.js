@@ -204,6 +204,23 @@ function createNumberInput(container, max_value = Infinity, step = 1) {
   const input_max = Number(input.max);
   const input_min = Number(input.min);
   function makeValueValid() {
+    // https://stackoverflow.com/questions/17369098/simplest-way-of-getting-the-number-of-decimals-in-a-number-in-javascript
+    if (Math.floor(Number(input.value)) !== Number(input.value)) {
+      let decimalCount;
+      if (input.value.indexOf(".") !== -1 && input.value.indexOf("-") !== -1) {
+        decimalCount =
+          input.value.split(/[.-]/)[1].length + input.value.split("-")[1] || 0;
+      } else if (input.value.indexOf(".") !== -1) {
+        decimalCount = input.value.split(".")[1].length || 0;
+      } else {
+        decimalCount = input.value.split("-")[1] || 0;
+      }
+      // Using Math.round to clean up arithmetic imprecisions
+      const remainder =
+        Math.round((Number(input.value) % step) * Math.pow(10, decimalCount)) /
+        Math.pow(10, decimalCount);
+      input.value = Number(input.value) - remainder;
+    }
     if (Number(input.value) > input_max) {
       input.value = input_max;
     }
