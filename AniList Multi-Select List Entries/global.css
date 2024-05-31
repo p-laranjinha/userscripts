@@ -59,15 +59,15 @@ body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
 }
 .rtonne-anilist-multiselect-form
   .el-checkbox__inner:has(.el-checkbox__original[readonly]):after {
-  content: "⎯";
-  color: rgb(var(--color-black));
-  left: 50%;
-  transform: scale(1.5, 2);
-  font-size: 14px;
-  left: 1px;
-  top: -8.5px;
-  width: 0;
-  height: 0;
+  background-color: black;
+  transform: scale(1, 1);
+  left: 0;
+  top: 0;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  margin: 2px;
+  border-width: 0;
+  border-radius: 2px;
 }
 .rtonne-anilist-multiselect-form .el-checkbox__inner:after {
   border-color: transparent;

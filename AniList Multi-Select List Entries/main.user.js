@@ -28,7 +28,6 @@
 // TODO: make actions return errors that require input to continue (maybe have option to just skip all with errors)
 // TODO: delete waitForElementToBeDeleted if not required
 // TODO: add validation to the API requesters so they fail properly on fetch error
-// TODO: fix the indeterminate checkbox look
 // TODO: standardize either using dialog or popup or message box
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
