@@ -15,8 +15,6 @@
 // ==/UserScript==
 
 // TODO: add scrollbar to dropdown
-// TODO: make it work for different color themes
-// TODO: see if changing the account color changes input colors
 // TODO: check what validation errors might occur (like having finish date before start date)
 // TODO: make number inputs only allow "steppable" values
 // TODO: see if anything gets saved even when deleted (to know if other actions have to be done when deletion is selected)

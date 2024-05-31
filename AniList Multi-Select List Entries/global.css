@@ -1,5 +1,5 @@
 .rtonne-anilist-multiselect-addbutton {
-  background: rgb(var(--color-blue-800)) !important;
+  background: rgb(var(--color-green-500)) !important;
 }
 .rtonne-anilist-multiselect-removebutton {
   background: rgb(var(--color-red)) !important;
@@ -9,7 +9,7 @@
   top: 42px !important;
 }
 .entry-card.rtonne-anilist-multiselect-selected {
-  box-shadow: 0 0 8px 2px rgb(var(--color-black)),
+  box-shadow: 0 0 8px 2px rgb(var(--color-background)),
     0 0 0 8px rgb(var(--color-blue)) !important;
 }
 .entry.rtonne-anilist-multiselect-selected {
@@ -62,7 +62,7 @@ body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
   margin-top: 32px;
   border-radius: 3px;
   box-shadow: 0 0 0 8px rgb(var(--color-background)),
-    0 0 4px 10px rgb(var(--color-black)), 0 0 0 12px rgb(var(--color-blue));
+    0 0 4px 10px rgb(var(--color-background)), 0 0 0 12px rgb(var(--color-blue));
   font-size: 1.3rem;
   display: flex;
   flex-direction: column;
@@ -89,7 +89,7 @@ body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
 }
 .rtonne-anilist-multiselect-form
   .el-checkbox__inner:has(.el-checkbox__original[readonly]):after {
-  background-color: black;
+  background-color: rgb(var(--color-shadow));
   transform: scale(1, 1);
   left: 0;
   top: 0;
@@ -110,4 +110,7 @@ body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
 .rtonne-anilist-multiselect-form
   .el-checkbox:has(.el-checkbox__original[readonly]) {
   text-decoration: line-through;
+}
+.rtonne-anilist-multiselect-form .el-checkbox.is-checked {
+  color: rgb(var(--color-blue-600));
 }

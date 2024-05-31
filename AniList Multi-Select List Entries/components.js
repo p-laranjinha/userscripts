@@ -377,7 +377,7 @@ function createIndeterminateCheckbox(container, text) {
 function createButton(container, text) {
   const button = document.createElement("button");
   button.innerText = text;
-  button.style.backgroundColor = "rgb(var(--color-blue))";
+  button.style.backgroundColor = "rgb(var(--color-blue-600))";
   button.style.color = "rgb(var(--color-text-bright))";
   button.style.border = "none";
   button.style.borderRadius = "3px";
