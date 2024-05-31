@@ -18,14 +18,14 @@
 // TODO: check what validation errors might occur (like having finish date before start date)
 // TODO: see if anything gets saved even when deleted (to know if other actions have to be done when deletion is selected)
 // TODO: add info explaining what indeterminate checkboxes are
-// TODO: add a warning when an error occurs (its not getting the custom lists, for example)
 // TODO: make advanced scores work
-// TODO: make actions return errors that require input to continue (maybe have option to just skip all with errors)
 // TODO: delete waitForElementToBeDeleted if not required
-// TODO: add validation to the API requesters so they fail properly on fetch error
-// TODO: standardize either using dialog or popup or message box
 // TODO: check if we can send empty mutation requests for stuff like dates
 // TODO: maybe put all/most inline styling of components in the css file
+// TODO: maybe make getDataFromElementDialog() into a function that queries the api instead
+// TODO: fix clicking anywhere in a dialog closing it
+// TODO: change from selected_entries.length to ids.length as ids can now be cut short on error if the user so chooses to
+// TODO: make function not return successful if canceled
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -583,16 +583,16 @@ async function setupForm() {
 
     confirm_popup_button.onclick = async () => {
       // Content is in yet another function so I can do stuff after it returns anywhere
-      await (async () => {
+      const success = await (async () => {
         let is_cancelled = false;
         const {
-          dialog_wrapper,
-          dialog_cancel_button,
-          changeDialogTitle,
-          changeDialogContent,
-          closeDialog,
+          popup_wrapper,
+          popup_cancel_button,
+          changePopupTitle,
+          changePopupContent,
+          closePopup,
         } = createUpdatableCancelPopup("Processing the request...", "");
-        dialog_wrapper.onclick = dialog_cancel_button.onclick = () => {
+        popup_wrapper.onclick = popup_cancel_button.onclick = () => {
           is_cancelled = true;
         };
 
@@ -602,39 +602,71 @@ async function setupForm() {
           const entry_id = Number(entry_title_link.href.split("/")[4]);
           media_ids.push(entry_id);
         }
-        const { ids } = await turnMediaIdsIntoIds(media_ids);
+        ({ ids, errors } = await turnMediaIdsIntoIds(media_ids));
+        if (errors) {
+          const error_message = `${ids.length}/${selected_entries.length} IDs were successfully obtained. Please look at the console for more information. Do you want to cancel the request?`;
+          if (await createErrorPopup(error_message)) {
+            closePopup();
+            return false;
+          }
+        }
         let dialog_data = [];
 
         if (values_to_be_changed.delete) {
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
-            changeDialogContent(
-              createEntryDialogContent(
-                `Deleting: <b>${selected_entries[i]
-                  .querySelector(".title > a")
-                  .innerText.trim()}</b>`,
+            const entry_title = selected_entries[i]
+              .querySelector(".title > a")
+              .innerText.trim();
+            changePopupContent(
+              createEntryPopupContent(
+                `Deleting: <b>${entry_title}</b>`,
                 selected_entries[i].querySelector(".image").style
                   .backgroundImage,
                 i + 1,
                 selected_entries.length
               )
             );
-            await deleteEntry(ids[i]);
+            ({ errors } = await deleteEntry(ids[i]));
+            if (errors) {
+              const error_message = `An error occurred while deleting ${entry_title}. Please look at the console for more information. Do you want to cancel the request?`;
+              if (await createErrorPopup(error_message)) {
+                closePopup();
+                return false;
+              }
+            }
           }
-          closeDialog();
-          return;
+          closePopup();
+          return true;
         }
         if (values_to_be_changed.favourite !== undefined) {
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+            const entry_title = selected_entries[i]
+              .querySelector(".title > a")
+              .innerText.trim();
+
             if (!dialog_data[i]) {
-              dialog_data[i] = await getDataFromElementDialog(
+              ({ data, errors } = await getDataFromElementDialog(
                 selected_entries[i]
-              );
+              ));
+              if (errors) {
+                const error_message = `An error occurred while getting info to ${
+                  values_to_be_changed.favourite
+                    ? `add ${entry_title} to`
+                    : `remove ${entry_title} from`
+                } favourites. Please look at the console for more information. Do you want to cancel the request?`;
+                if (await createErrorPopup(error_message)) {
+                  closePopup();
+                  return false;
+                }
+              }
+              dialog_data[i] = data;
             }
             if (
+              dialog_data &&
               values_to_be_changed.favourite !== dialog_data[i].is_favourite
             ) {
-              changeDialogContent(
-                createEntryDialogContent(
+              changePopupContent(
+                createEntryPopupContent(
                   `${
                     values_to_be_changed.favourite
                       ? "Adding to favourites"
@@ -648,43 +680,75 @@ async function setupForm() {
                   selected_entries.length
                 )
               );
+              let errors;
               if (is_list_anime) {
-                await toggleFavouriteForEntry({ animeId: media_ids[i] });
+                ({ errors: tmp_errors } = await toggleFavouriteForEntry({
+                  animeId: media_ids[i],
+                }));
+                errors = tmp_errors;
               } else {
-                await toggleFavouriteForEntry({ mangaId: media_ids[i] });
+                ({ errors: tmp_errors } = await toggleFavouriteForEntry({
+                  mangaId: media_ids[i],
+                }));
+                errors = tmp_errors;
+              }
+              if (errors) {
+                const error_message = `An error occurred while ${entry_title} was being ${
+                  values_to_be_changed.favourite ? "added to" : "removed from"
+                } favourites. Please look at the console for more information. Do you want to cancel the request?`;
+                if (await createErrorPopup(error_message)) {
+                  closePopup();
+                  return false;
+                }
               }
             }
           }
         }
 
         // Adding/removing from custom lists requires more meddling
+        // If all custom lists have been decided no further processing is required
+        if (
+          custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
+        ) {
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+            changePopupContent(
+              createEntryPopupContent(
+                `Updating: <b>${selected_entries[i]
+                  .querySelector(".title > a")
+                  .innerText.trim()}</b>`,
+                selected_entries[i].querySelector(".image").style
+                  .backgroundImage,
+                i + 1,
+                selected_entries.length
+              )
+            );
+            ({ errors } = await updateEntry(ids[i], values_to_be_changed));
+            if (errors) {
+              const entry_title = selected_entries[i]
+                .querySelector(".title > a")
+                .innerText.trim();
+              const error_message = `An error occurred while updating ${entry_title}. Please look at the console for more information. Do you want to cancel the request?`;
+              if (await createErrorPopup(error_message)) {
+                closePopup();
+                return false;
+              }
+            }
+          }
+          closePopup();
+          return true;
+        }
+        // If only some custom lists have been decided,
+        // we need to make sure we don't remove the entries from their current custom lists
         if (
           custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate)
         ) {
-          // If all custom lists have been decided no further processing is required
-          if (
-            custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
-          ) {
-            for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
-              changeDialogContent(
-                createEntryDialogContent(
-                  `Updating: <b>${selected_entries[i]
-                    .querySelector(".title > a")
-                    .innerText.trim()}</b>`,
-                  selected_entries[i].querySelector(".image").style
-                    .backgroundImage,
-                  i + 1,
-                  selected_entries.length
-                )
-              );
-              await updateEntry(ids[i], values_to_be_changed);
-            }
-            closeDialog();
-            return;
-          }
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
-            changeDialogContent(
-              createEntryDialogContent(
+            const entry_title = selected_entries[i]
+              .querySelector(".title > a")
+              .innerText.trim();
+
+            changePopupContent(
+              createEntryPopupContent(
                 `Updating: <b>${selected_entries[i]
                   .querySelector(".title > a")
                   .innerText.trim()}</b>`,
@@ -696,9 +760,17 @@ async function setupForm() {
             );
             let final_custom_lists = [];
             if (!dialog_data[i]) {
-              dialog_data[i] = await getDataFromElementDialog(
+              ({ data, errors } = await getDataFromElementDialog(
                 selected_entries[i]
-              );
+              ));
+              if (errors) {
+                const error_message = `An error occurred while getting info to update ${entry_title}. Please look at the console for more information. Do you want to cancel the request?`;
+                if (await createErrorPopup(error_message)) {
+                  closePopup();
+                  return false;
+                }
+              }
+              dialog_data[i] = data;
             }
             let entry_custom_lists = dialog_data[i].custom_lists;
             for (let j = 0; j < custom_lists.length; j++) {
@@ -712,27 +784,44 @@ async function setupForm() {
                 }
               }
             }
-            await updateEntry(ids[i], {
+            ({ errors } = await updateEntry(ids[i], {
               ...values_to_be_changed,
               customLists: final_custom_lists,
-            });
+            }));
+            if (errors) {
+              const error_message = `An error occurred while updating ${entry_title}. Please look at the console for more information. Do you want to cancel the request?`;
+              if (await createErrorPopup(error_message)) {
+                closePopup();
+                return false;
+              }
+            }
           }
-          closeDialog();
-          return;
+          closePopup();
+          return true;
         }
 
-        changeDialogContent(
+        changePopupContent(
           "Updating all the entries at once. Not possible to cancel."
         );
-        await batchUpdateEntries(ids, values_to_be_changed);
-        closeDialog();
+        ({ errors } = await batchUpdateEntries(ids, values_to_be_changed));
+        closePopup();
+        if (errors) {
+          const error_message = `An error occurred while batch updating. Please look at the console for more information.`;
+          createPopup("ERROR", error_message);
+          return false;
+        }
+        return true;
       })();
 
-      const finished_popup_button = createConfirmPopup(
-        "Done!",
-        "The request has finished. Do you want to refresh?"
-      );
-      finished_popup_button.onclick = () => window.location.reload();
+      if (success) {
+        const finished_popup_button = createConfirmPopup(
+          "Done!",
+          "The request has finished. Do you want to refresh?"
+        );
+        finished_popup_button.onclick = () => window.location.reload();
+      } else {
+        createPopup("Uh oh.", "The request has failed.");
+      }
     };
   };
 

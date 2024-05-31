@@ -114,3 +114,8 @@ body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
 .rtonne-anilist-multiselect-form .el-checkbox.is-checked {
   color: rgb(var(--color-blue-600));
 }
+
+/* Added shadow to all box shadows because they may overlap now*/
+.el-message-box {
+  box-shadow: 0 0 2px 3px rgb(var(--color-text));
+}

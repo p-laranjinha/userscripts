@@ -552,7 +552,7 @@ function createUpdatableCancelPopup(initial_title, initial_content) {
   container.append(buttons);
   const cancel_button = createCancelButton(buttons, "Cancel");
 
-  function closeDialog() {
+  function closePopup() {
     modal.remove();
     wrapper.remove();
   }
@@ -560,10 +560,10 @@ function createUpdatableCancelPopup(initial_title, initial_content) {
   // Used .addEventListener instead of .onclick
   // so either can be used outside this function
   wrapper.addEventListener("click", () => {
-    closeDialog();
+    closePopup();
   });
   cancel_button.addEventListener("click", () => {
-    closeDialog();
+    closePopup();
   });
 
   function changeTitle(title) {
@@ -575,23 +575,23 @@ function createUpdatableCancelPopup(initial_title, initial_content) {
   }
 
   return {
-    dialog_wrapper: wrapper,
-    dialog_cancel_button: cancel_button,
-    changeDialogTitle: changeTitle,
-    changeDialogContent: changeContent,
-    closeDialog,
+    popup_wrapper: wrapper,
+    popup_cancel_button: cancel_button,
+    changePopupTitle: changeTitle,
+    changePopupContent: changeContent,
+    closePopup: closePopup,
   };
 }
 
 /**
- * Creates entry specific content to add to a dialog.
+ * Creates entry specific content to add to a popup.
  * @param {string} text Text to display to the left of the cover.
  * @param {string} cover The cover to add as a background-image style.
  * @param {number} current_index The index of the current entry being show.
  * @param {number} total The total entries going to be shown.
  * @returns
  */
-function createEntryDialogContent(text, cover, current_index, total) {
+function createEntryPopupContent(text, cover, current_index, total) {
   const content = document.createElement("div");
   content.style.display = "flex";
   content.style.flexWrap = "wrap";
@@ -636,4 +636,124 @@ function createEntryDialogContent(text, cover, current_index, total) {
                           -1px 1px rgb(var(--color-background))`;
   bar.appendChild(bar_text);
   return content;
+}
+
+/**
+ * Creates an error popup.
+ * @param {string} text The message/content of the popup.
+ * @returns {Promise<boolean>} A promise that returns if the user asked to cancel.
+ */
+function createErrorPopup(text) {
+  const modal = document.createElement("div");
+  modal.className = "v-modal";
+  modal.style.zIndex = "99999";
+  document.body.append(modal);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "el-message-box__wrapper";
+  wrapper.style.zIndex = "100000";
+  document.body.append(wrapper);
+  const container = document.createElement("div");
+  container.className = "el-message-box";
+  wrapper.append(container);
+
+  const header = document.createElement("div");
+  header.className = "el-message-box__header";
+  container.append(header);
+  const title = document.createElement("div");
+  title.className = "el-message-box__title";
+  title.innerHTML = `<span>ERROR<span>`;
+  header.append(title);
+  const close_button = document.createElement("button");
+  close_button.className = "el-message-box__headerbtn";
+  header.append(close_button);
+  const close_button_icon = document.createElement("i");
+  close_button_icon.className = "el-message-box__close el-icon-close";
+  close_button.append(close_button_icon);
+
+  const content = document.createElement("div");
+  content.className = "el-message-box__content";
+  container.append(content);
+  const message = document.createElement("div");
+  message.className = "el-message-box__message";
+  message.innerHTML = `<p>${text}</p>`;
+  content.append(message);
+
+  const buttons = document.createElement("div");
+  buttons.className = "el-message-box__btns";
+  container.append(buttons);
+  const ignore_button = createCancelButton(buttons, "Ignore");
+  const cancel_button = createDangerButton(buttons, "Cancel");
+
+  return new Promise((resolve) => {
+    close_button.onclick =
+      ignore_button.onclick =
+      wrapper.onclick =
+        () => {
+          modal.remove();
+          wrapper.remove();
+          resolve(false);
+        };
+
+    cancel_button.onclick = () => {
+      modal.remove();
+      wrapper.remove();
+      resolve(true);
+    };
+  });
+}
+
+/**
+ * Creates a popup.
+ * @param {string} title_text A text/html title for the popup.
+ * @param {string} message_text The text/html content of the popup.
+ */
+function createPopup(title_text, message_text) {
+  const modal = document.createElement("div");
+  modal.className = "v-modal";
+  modal.style.zIndex = "99999";
+  document.body.append(modal);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "el-message-box__wrapper";
+  wrapper.style.zIndex = "100000";
+  document.body.append(wrapper);
+  const container = document.createElement("div");
+  container.className = "el-message-box";
+  wrapper.append(container);
+
+  const header = document.createElement("div");
+  header.className = "el-message-box__header";
+  container.append(header);
+  const title = document.createElement("div");
+  title.className = "el-message-box__title";
+  title.innerHTML = `<span>${title_text}</span>`;
+  header.append(title);
+  const close_button = document.createElement("button");
+  close_button.className = "el-message-box__headerbtn";
+  header.append(close_button);
+  const close_button_icon = document.createElement("i");
+  close_button_icon.className = "el-message-box__close el-icon-close";
+  close_button.append(close_button_icon);
+
+  const content = document.createElement("div");
+  content.className = "el-message-box__content";
+  container.append(content);
+  const message = document.createElement("div");
+  message.className = "el-message-box__message";
+  message.innerHTML = `<p>${message_text}</p>`;
+  content.append(message);
+
+  const buttons = document.createElement("div");
+  buttons.className = "el-message-box__btns";
+  container.append(buttons);
+  const ok_button = createButton(buttons, "Ok");
+
+  close_button.onclick =
+    wrapper.onclick =
+    ok_button.onclick =
+      () => {
+        modal.remove();
+        wrapper.remove();
+      };
 }

@@ -96,7 +96,7 @@ async function getDataFromElementDialog(element) {
     close_dialog_button.click();
     return data;
   } catch (e) {
-    console.log(e);
+    console.error(e);
     return { errors: [{ message: e }] };
   }
 }
@@ -328,7 +328,16 @@ async function deleteEntry(id) {
   if (errors) {
     return { errors };
   } else if (data && !data["DeleteMediaListEntry"]["deleted"]) {
-    return { errors: [{ message: "Entry was not deleted." }] };
+    console.error(
+      `The deletion request threw no errors but id ${id} was not deleted.`
+    );
+    return {
+      errors: [
+        {
+          message: `The deletion request threw no errors but id ${id} was not deleted.`,
+        },
+      ],
+    };
   }
 }
 
@@ -365,8 +374,11 @@ async function turnMediaIdsIntoIds(media_ids) {
       })
     );
     if (errors) {
-      total_errors.join(errors);
-      continue;
+      total_errors = total_errors.concat(errors);
+      // I'm not continuing here because having the returned ids in a
+      // different order to the media_ids would complicate showing the
+      // entry dialog correctly during processing.
+      break;
     }
     ids.push(...data["Page"]["mediaList"].map((entry) => entry["id"]));
   }
