@@ -390,13 +390,20 @@ async function setupForm() {
   new MutationObserver(() => {
     if (
       delete_checkbox.checked ||
-      start_date_enabled_checkbox.checked ||
+      status_enabled_checkbox.checked ||
       score_enabled_checkbox.checked ||
+      (is_list_anime &&
+        (progress_inputs.episode_enabled_checkbox.checked ||
+          progress_inputs.rewatches_enabled_checkbox.checked)) ||
+      (!is_list_anime &&
+        (progress_inputs.chapter_enabled_checkbox.checked ||
+          progress_inputs.volume_enabled_checkbox.checked ||
+          progress_inputs.rereads_enabled_checkbox.checked)) ||
       start_date_enabled_checkbox.checked ||
       finish_date_enabled_checkbox.checked ||
       notes_enabled_checkbox.checked ||
       (custom_lists.length > 0 &&
-        (custom_lists_checkboxes.some((e) => e.checked) ||
+        (custom_lists_checkboxes.some((e) => !e.indeterminate) ||
           !hide_from_status_list_checkbox.indeterminate)) ||
       !private_checkbox.indeterminate ||
       !favourite_checkbox.indeterminate
@@ -457,38 +464,38 @@ async function setupForm() {
       if (score_enabled_checkbox.checked) {
         action_list += `<li>Set <u>Score</u> to <b>${score_input.value}</b>.</li>`;
         values_to_be_changed.score = Number(score_input.value);
-        if (is_list_anime) {
-          if (progress_inputs.episode_enabled_checkbox.checked) {
-            action_list += `<li>Set <u>Episode Progress</u> to <b>${progress_inputs.episode_input.value}</b>.</li>`;
-            values_to_be_changed.progress = Number(
-              progress_inputs.episode_input.value
-            );
-          }
-          if (progress_inputs.rewatches_enabled_checkbox.checked) {
-            action_list += `<li>Set <u>Total Rewatches</u> to <b>${progress_inputs.rewatches_input.value}</b>.</li>`;
-            values_to_be_changed.repeat = Number(
-              progress_inputs.rewatches_input.value
-            );
-          }
-        } else {
-          if (progress_inputs.chapter_enabled_checkbox.checked) {
-            action_list += `<li>Set <u>Chapter Progress</u> to <b>${progress_inputs.chapter_input.value}</b>.</li>`;
-            values_to_be_changed.progress = Number(
-              progress_inputs.chapter_input.value
-            );
-          }
-          if (progress_inputs.volume_enabled_checkbox.checked) {
-            action_list += `<li>Set <u>Volume Progress</u> to <b>${progress_inputs.volume_input.value}</b>.</li>`;
-            values_to_be_changed.progressVolume = Number(
-              progress_inputs.volume_input.value
-            );
-          }
-          if (progress_inputs.rereads_enabled_checkbox.checked) {
-            action_list += `<li>Set <u>Total Rereads</u> to <b>${progress_inputs.rereads_input.value}</b>.</li>`;
-            values_to_be_changed.repeat = Number(
-              progress_inputs.rereads_input.value
-            );
-          }
+      }
+      if (is_list_anime) {
+        if (progress_inputs.episode_enabled_checkbox.checked) {
+          action_list += `<li>Set <u>Episode Progress</u> to <b>${progress_inputs.episode_input.value}</b>.</li>`;
+          values_to_be_changed.progress = Number(
+            progress_inputs.episode_input.value
+          );
+        }
+        if (progress_inputs.rewatches_enabled_checkbox.checked) {
+          action_list += `<li>Set <u>Total Rewatches</u> to <b>${progress_inputs.rewatches_input.value}</b>.</li>`;
+          values_to_be_changed.repeat = Number(
+            progress_inputs.rewatches_input.value
+          );
+        }
+      } else {
+        if (progress_inputs.chapter_enabled_checkbox.checked) {
+          action_list += `<li>Set <u>Chapter Progress</u> to <b>${progress_inputs.chapter_input.value}</b>.</li>`;
+          values_to_be_changed.progress = Number(
+            progress_inputs.chapter_input.value
+          );
+        }
+        if (progress_inputs.volume_enabled_checkbox.checked) {
+          action_list += `<li>Set <u>Volume Progress</u> to <b>${progress_inputs.volume_input.value}</b>.</li>`;
+          values_to_be_changed.progressVolume = Number(
+            progress_inputs.volume_input.value
+          );
+        }
+        if (progress_inputs.rereads_enabled_checkbox.checked) {
+          action_list += `<li>Set <u>Total Rereads</u> to <b>${progress_inputs.rereads_input.value}</b>.</li>`;
+          values_to_be_changed.repeat = Number(
+            progress_inputs.rereads_input.value
+          );
         }
       }
       if (start_date_enabled_checkbox.checked) {
@@ -616,7 +623,7 @@ async function setupForm() {
             );
             ({ errors } = await deleteEntry(ids[i]));
             if (errors) {
-              const error_message = `An error occurred while deleting ${entry_title}. Please look at the console for more information. Do you want to cancel the request?`;
+              const error_message = `An error occurred while deleting <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
               if (await createErrorPopup(error_message)) {
                 closePopup();
                 return false;
@@ -633,14 +640,12 @@ async function setupForm() {
               .innerText.trim();
 
             if (!dialog_data[i]) {
-              ({ data, errors } = await getDataFromElementDialog(
-                selected_entries[i]
-              ));
-              if (errors) {
+              const data = await getDataFromElementDialog(selected_entries[i]);
+              if (data.errors) {
                 const error_message = `An error occurred while getting info to ${
                   values_to_be_changed.favourite
-                    ? `add ${entry_title} to`
-                    : `remove ${entry_title} from`
+                    ? `add <b>${entry_title}</b> to`
+                    : `remove <b>${entry_title}</b> from`
                 } favourites. Please look at the console for more information. Do you want to cancel the request?`;
                 if (await createErrorPopup(error_message)) {
                   closePopup();
@@ -650,7 +655,7 @@ async function setupForm() {
               dialog_data[i] = data;
             }
             if (
-              dialog_data &&
+              dialog_data[i].is_favourite &&
               values_to_be_changed.favourite !== dialog_data[i].is_favourite
             ) {
               changePopupContent(
@@ -681,7 +686,7 @@ async function setupForm() {
                 errors = tmp_errors;
               }
               if (errors) {
-                const error_message = `An error occurred while ${entry_title} was being ${
+                const error_message = `An error occurred while <b>${entry_title}</b> was being ${
                   values_to_be_changed.favourite ? "added to" : "removed from"
                 } favourites. Please look at the console for more information. Do you want to cancel the request?`;
                 if (await createErrorPopup(error_message)) {
@@ -693,9 +698,11 @@ async function setupForm() {
           }
         }
 
-        // Adding/removing from custom lists requires more meddling
-        // If all custom lists have been decided no further processing is required
+        // Adding/removing from custom lists requires more meddling.
+        // If all custom lists have been decided no further processing is required.
+        // array.every() return true if array is empty so we need to check that
         if (
+          custom_lists_checkboxes.length > 0 &&
           custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
         ) {
           for (let i = 0; i < ids.length && !is_cancelled; i++) {
@@ -715,7 +722,7 @@ async function setupForm() {
               const entry_title = selected_entries[i]
                 .querySelector(".title > a")
                 .innerText.trim();
-              const error_message = `An error occurred while updating ${entry_title}. Please look at the console for more information. Do you want to cancel the request?`;
+              const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
               if (await createErrorPopup(error_message)) {
                 closePopup();
                 return false;
@@ -748,11 +755,9 @@ async function setupForm() {
             );
             let final_custom_lists = [];
             if (!dialog_data[i]) {
-              ({ data, errors } = await getDataFromElementDialog(
-                selected_entries[i]
-              ));
-              if (errors) {
-                const error_message = `An error occurred while getting info to update ${entry_title}. Please look at the console for more information. Do you want to cancel the request?`;
+              const data = await getDataFromElementDialog(selected_entries[i]);
+              if (data.errors) {
+                const error_message = `An error occurred while getting info to update <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
                 if (await createErrorPopup(error_message)) {
                   closePopup();
                   return false;
@@ -760,7 +765,7 @@ async function setupForm() {
               }
               dialog_data[i] = data;
             }
-            if (!dialog_data[i]) {
+            if (!dialog_data[i].custom_lists) {
               continue;
             }
             let entry_custom_lists = dialog_data[i].custom_lists;
@@ -780,7 +785,7 @@ async function setupForm() {
               customLists: final_custom_lists,
             }));
             if (errors) {
-              const error_message = `An error occurred while updating ${entry_title}. Please look at the console for more information. Do you want to cancel the request?`;
+              const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
               if (await createErrorPopup(error_message)) {
                 closePopup();
                 return false;
@@ -798,7 +803,7 @@ async function setupForm() {
         closePopup();
         if (errors) {
           const error_message = `An error occurred while batch updating. Please look at the console for more information.`;
-          createPopup("ERROR", error_message);
+          await createPopup("ERROR", error_message);
           return false;
         }
         return true;
@@ -810,8 +815,6 @@ async function setupForm() {
           "The request has finished. Do you want to refresh?"
         );
         finished_popup_button.onclick = () => window.location.reload();
-      } else {
-        createPopup("Uh oh.", "The request has failed.");
       }
     };
   };

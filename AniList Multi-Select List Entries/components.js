@@ -707,6 +707,7 @@ function createErrorPopup(text) {
  * Creates a popup.
  * @param {string} title_text A text/html title for the popup.
  * @param {string} message_text The text/html content of the popup.
+ * @returns {Promise<void>}
  */
 function createPopup(title_text, message_text) {
   const modal = document.createElement("div");
@@ -749,11 +750,14 @@ function createPopup(title_text, message_text) {
   container.append(buttons);
   const ok_button = createButton(buttons, "Ok");
 
-  close_button.onclick =
-    wrapper.onclick =
-    ok_button.onclick =
-      () => {
-        modal.remove();
-        wrapper.remove();
-      };
+  return new Promise((resolve) => {
+    close_button.onclick =
+      wrapper.onclick =
+      ok_button.onclick =
+        () => {
+          modal.remove();
+          wrapper.remove();
+          resolve();
+        };
+  });
 }
