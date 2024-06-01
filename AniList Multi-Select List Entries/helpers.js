@@ -31,33 +31,6 @@ function waitForElements(selector) {
 }
 
 /**
- * Uses a MutationObserver to wait until the element no longer exists.
- * @param {HTMLElement} element
- * @returns {Promise<null>}
- */
-function waitForElementToBeRemovedOrHidden(element) {
-  return new Promise((resolve) => {
-    if (!document.contains(element) || element.style.display === "none") {
-      return resolve();
-    }
-
-    const observer = new MutationObserver(() => {
-      if (!document.contains(element) || element.style.display === "none") {
-        observer.disconnect();
-        resolve();
-      }
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributeOldValue: true,
-      attributeFilter: ["style"],
-    });
-  });
-}
-
-/**
  *
  * @param {HTMLElement} element The element of the anime/manga entry
  * @returns {Promise<{custom_lists: {name: string, checked: boolean}[], is_favourite: boolean} | {errors: {message: Error}[]}>}

@@ -20,9 +20,8 @@
 // TODO: see if anything gets saved even when deleted (to know if other actions have to be done when deletion is selected)
 // TODO: add info explaining what indeterminate checkboxes are
 // TODO: make advanced scores work
-// TODO: delete waitForElementToBeDeleted if not required
 // TODO: maybe put all/most inline styling of components in the css file
-// TODO: maybe make getDataFromElementDialog() into a function that queries the api instead
+// TODO: make getDataFromElementDialog() into a function that queries the api instead
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
