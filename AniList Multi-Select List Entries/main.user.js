@@ -22,6 +22,7 @@
 // TODO: make advanced scores work
 // TODO: maybe put all/most inline styling of components in the css file
 // TODO: make getDataFromElementDialog() into a function that queries the api instead
+// TODO: remove unnecessary return variables from queries
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -29,7 +30,6 @@ const PLUS_SVG = GM.getResourceText("PLUS_SVG");
 const MINUS_SVG = GM.getResourceText("MINUS_SVG");
 
 let WAS_LAST_LIST_ANIME = false;
-let FORM;
 
 let current_url = null;
 let new_url = null;
@@ -111,17 +111,26 @@ async function setupButtons() {
 }
 
 async function setupForm() {
-  // Check if the form needs to be made/remade (changed from manga to anime or vice-versa)
+  // Check if the form needs to be made/remade
   const [container] = await waitForElements(".filters-wrap");
   const is_list_anime = document
     .querySelector(".nav.container > a[href$='animelist']")
     .classList.contains("router-link-active");
-  const list_already_exists = document.querySelector(
+  let previous_forms = document.querySelectorAll(
     ".rtonne-anilist-multiselect-form"
   );
-  if (list_already_exists) {
+  if (previous_forms.length > 0) {
+    // In case we end up with multiple forms because of asynchronicity, remove the extra ones
+    if (previous_forms.length > 1) {
+      for (let i = 0; i < previous_forms.length - 1; i++) {
+        previous_forms[i].remove();
+      }
+    }
+    // If we change from anime to manga or vice versa, redo the form
     if (WAS_LAST_LIST_ANIME !== is_list_anime) {
-      FORM.remove();
+      for (const form of previous_forms) {
+        form.remove();
+      }
     } else {
       return;
     }
@@ -176,17 +185,25 @@ async function setupForm() {
   document.body.classList.remove("rtonne-anilist-multiselect-modal-hidden");
   document.body.classList.remove("rtonne-anilist-multiselect-dialog-hidden");
 
+  // Its a shame we call getDataFromElementDialog() before checking if a form has already been created,
+  // but its better we do even so because multiple forms are created otherwise
+  let previous_form = document.querySelector(
+    ".rtonne-anilist-multiselect-form"
+  );
+  if (previous_form) {
+    return;
+  }
   // Create the form
-  FORM = document.createElement("div");
-  FORM.className = "filters rtonne-anilist-multiselect-form";
-  FORM.style.display = "none";
-  container.append(FORM);
+  const form = document.createElement("div");
+  form.className = "filters rtonne-anilist-multiselect-form";
+  form.style.display = "none";
+  container.append(form);
 
   const status_container = document.createElement("div");
   status_container.id = "rtonne-anilist-multiselect-status-input";
   status_container.className =
     "rtonne-anilist-multiselect-has-enabled-checkbox";
-  FORM.append(status_container);
+  form.append(status_container);
   const status_label = document.createElement("label");
   status_label.innerText = "Status";
   status_container.append(status_label);
@@ -196,7 +213,7 @@ async function setupForm() {
   const score_container = document.createElement("div");
   score_container.id = "rtonne-anilist-multiselect-score-input";
   score_container.className = "rtonne-anilist-multiselect-has-enabled-checkbox";
-  FORM.append(score_container);
+  form.append(score_container);
   const score_label = document.createElement("label");
   score_label.innerText = "Score";
   score_container.append(score_label);
@@ -227,7 +244,7 @@ async function setupForm() {
       episode_container.id = "rtonne-anilist-multiselect-episode-input";
       episode_container.className =
         "rtonne-anilist-multiselect-has-enabled-checkbox";
-      FORM.append(episode_container);
+      form.append(episode_container);
       const episode_label = document.createElement("label");
       episode_label.innerText = "Episode Progress";
       episode_container.append(episode_label);
@@ -241,7 +258,7 @@ async function setupForm() {
       rewatches_container.id = "rtonne-anilist-multiselect-rewatches-input";
       rewatches_container.className =
         "rtonne-anilist-multiselect-has-enabled-checkbox";
-      FORM.append(rewatches_container);
+      form.append(rewatches_container);
       const rewatches_label = document.createElement("label");
       rewatches_label.innerText = "Total Rewatches";
       rewatches_container.append(rewatches_label);
@@ -255,7 +272,7 @@ async function setupForm() {
       chapter_container.id = "rtonne-anilist-multiselect-episode-input";
       chapter_container.className =
         "rtonne-anilist-multiselect-has-enabled-checkbox";
-      FORM.append(chapter_container);
+      form.append(chapter_container);
       const chapter_label = document.createElement("label");
       chapter_label.innerText = "Chapter Progress";
       chapter_container.append(chapter_label);
@@ -269,7 +286,7 @@ async function setupForm() {
       volume_container.id = "rtonne-anilist-multiselect-episode-input";
       volume_container.className =
         "rtonne-anilist-multiselect-has-enabled-checkbox";
-      FORM.append(volume_container);
+      form.append(volume_container);
       const volume_label = document.createElement("label");
       volume_label.innerText = "Volume Progress";
       volume_container.append(volume_label);
@@ -283,7 +300,7 @@ async function setupForm() {
       rereads_container.id = "rtonne-anilist-multiselect-rewatches-input";
       rereads_container.className =
         "rtonne-anilist-multiselect-has-enabled-checkbox";
-      FORM.append(rereads_container);
+      form.append(rereads_container);
       const rereads_label = document.createElement("label");
       rereads_label.innerText = "Total Rereads";
       rereads_container.append(rereads_label);
@@ -300,7 +317,7 @@ async function setupForm() {
   start_date_container.id = "rtonne-anilist-multiselect-start-date-input";
   start_date_container.className =
     "rtonne-anilist-multiselect-has-enabled-checkbox";
-  FORM.append(start_date_container);
+  form.append(start_date_container);
   const start_date_label = document.createElement("label");
   start_date_label.innerText = "Start Date";
   start_date_container.append(start_date_label);
@@ -314,7 +331,7 @@ async function setupForm() {
   finish_date_container.id = "rtonne-anilist-multiselect-finish-date-input";
   finish_date_container.className =
     "rtonne-anilist-multiselect-has-enabled-checkbox";
-  FORM.append(finish_date_container);
+  form.append(finish_date_container);
   const finish_date_label = document.createElement("label");
   finish_date_label.innerText = "Finish Date";
   finish_date_container.append(finish_date_label);
@@ -327,7 +344,7 @@ async function setupForm() {
   const notes_container = document.createElement("div");
   notes_container.id = "rtonne-anilist-multiselect-notes-input";
   notes_container.className = "rtonne-anilist-multiselect-has-enabled-checkbox";
-  FORM.append(notes_container);
+  form.append(notes_container);
   const notes_label = document.createElement("label");
   notes_label.innerText = "Notes";
   notes_container.append(notes_label);
@@ -341,7 +358,7 @@ async function setupForm() {
   if (custom_lists.length > 0) {
     const custom_lists_container = document.createElement("div");
     custom_lists_container.id = "rtonne-anilist-multiselect-custom-lists-input";
-    FORM.append(custom_lists_container);
+    form.append(custom_lists_container);
     const custom_lists_label = document.createElement("label");
     custom_lists_label.innerText = "Custom Lists";
     custom_lists_container.append(custom_lists_label);
@@ -366,7 +383,7 @@ async function setupForm() {
 
   const other_actions_container = document.createElement("div");
   other_actions_container.id = "rtonne-anilist-multiselect-other-actions-input";
-  FORM.append(other_actions_container);
+  form.append(other_actions_container);
   const other_actions_label = document.createElement("label");
   other_actions_label.innerText = "Other Actions";
   other_actions_container.append(other_actions_label);
@@ -380,9 +397,9 @@ async function setupForm() {
   );
   const delete_checkbox = createCheckbox(other_actions_container, "Delete");
 
-  const deselect_all_button = createDangerButton(FORM, "Deselect All Entries");
+  const deselect_all_button = createDangerButton(form, "Deselect All Entries");
 
-  const confirm_button = createButton(FORM, "Confirm");
+  const confirm_button = createButton(form, "Confirm");
   new MutationObserver(() => {
     if (
       delete_checkbox.checked ||
@@ -408,7 +425,7 @@ async function setupForm() {
     } else {
       confirm_button.style.display = "none";
     }
-  }).observe(FORM, {
+  }).observe(form, {
     childList: true,
     subtree: true,
     attributeFilter: ["class"],
@@ -417,7 +434,7 @@ async function setupForm() {
   const currently_selected_label = document.createElement("label");
   currently_selected_label.style.alignSelf = "center";
   currently_selected_label.style.color = "rgb(var(--color-blue))";
-  FORM.append(currently_selected_label);
+  form.append(currently_selected_label);
 
   deselect_all_button.onclick = () => {
     const selected_entries = document.querySelectorAll(
@@ -839,9 +856,9 @@ async function setupForm() {
       selected_entries > 1 ? "ies" : "y"
     } selected.`;
     if (selected_entries > 0) {
-      FORM.style.display = "flex";
+      form.style.display = "flex";
     } else {
-      FORM.style.display = "none";
+      form.style.display = "none";
     }
   }).observe(document.querySelector(".lists"), {
     childList: true,
