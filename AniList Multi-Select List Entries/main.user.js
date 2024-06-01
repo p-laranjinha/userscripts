@@ -24,8 +24,6 @@
 // TODO: maybe put all/most inline styling of components in the css file
 // TODO: maybe make getDataFromElementDialog() into a function that queries the api instead
 // TODO: fix clicking anywhere in a dialog closing it
-// TODO: change from selected_entries.length to ids.length as ids can now be cut short on error if the user so chooses to
-// TODO: make function not return successful if canceled
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -613,7 +611,7 @@ async function setupForm() {
         let dialog_data = [];
 
         if (values_to_be_changed.delete) {
-          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+          for (let i = 0; i < ids.length && !is_cancelled; i++) {
             const entry_title = selected_entries[i]
               .querySelector(".title > a")
               .innerText.trim();
@@ -623,7 +621,7 @@ async function setupForm() {
                 selected_entries[i].querySelector(".image").style
                   .backgroundImage,
                 i + 1,
-                selected_entries.length
+                ids.length
               )
             );
             ({ errors } = await deleteEntry(ids[i]));
@@ -639,7 +637,7 @@ async function setupForm() {
           return true;
         }
         if (values_to_be_changed.favourite !== undefined) {
-          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+          for (let i = 0; i < ids.length && !is_cancelled; i++) {
             const entry_title = selected_entries[i]
               .querySelector(".title > a")
               .innerText.trim();
@@ -677,7 +675,7 @@ async function setupForm() {
                   selected_entries[i].querySelector(".image").style
                     .backgroundImage,
                   i + 1,
-                  selected_entries.length
+                  ids.length
                 )
               );
               let errors;
@@ -710,7 +708,7 @@ async function setupForm() {
         if (
           custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
         ) {
-          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+          for (let i = 0; i < ids.length && !is_cancelled; i++) {
             changePopupContent(
               createEntryPopupContent(
                 `Updating: <b>${selected_entries[i]
@@ -719,7 +717,7 @@ async function setupForm() {
                 selected_entries[i].querySelector(".image").style
                   .backgroundImage,
                 i + 1,
-                selected_entries.length
+                ids.length
               )
             );
             ({ errors } = await updateEntry(ids[i], values_to_be_changed));
@@ -742,7 +740,7 @@ async function setupForm() {
         if (
           custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate)
         ) {
-          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+          for (let i = 0; i < ids.length && !is_cancelled; i++) {
             const entry_title = selected_entries[i]
               .querySelector(".title > a")
               .innerText.trim();
@@ -755,7 +753,7 @@ async function setupForm() {
                 selected_entries[i].querySelector(".image").style
                   .backgroundImage,
                 i + 1,
-                selected_entries.length
+                ids.length
               )
             );
             let final_custom_lists = [];
@@ -771,6 +769,9 @@ async function setupForm() {
                 }
               }
               dialog_data[i] = data;
+            }
+            if (!dialog_data[i]) {
+              continue;
             }
             let entry_custom_lists = dialog_data[i].custom_lists;
             for (let j = 0; j < custom_lists.length; j++) {
