@@ -20,7 +20,7 @@
 // TODO: see if anything gets saved even when deleted (to know if other actions have to be done when deletion is selected)
 // TODO: make advanced scores work
 // TODO: maybe put all/most inline styling of components in the css file (search .style)
-// TODO: make getDataFromElementDialog() into a function that queries the api instead
+// TODO: make getDataFromElementDialog() into a function that queries the api instead (maybe join it with turnMediaIdsIntoIds)
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -201,7 +201,7 @@ async function setupForm() {
   const help = document.createElement("div");
   help.innerHTML =
     "ⓘ Because values can be empty, there are 2 ways to enable them. The first one is via an Enable checkbox;" +
-    "the second one is using indeterminate checkboxes, where a dark square and strikethrough text means they're not enabled.";
+    " the second one is using indeterminate checkboxes, where a dark square and strikethrough text means they're not enabled.";
   help.style.width = "100%";
   help.style.position = "absolute";
   help.style.left = 0;
@@ -636,19 +636,23 @@ async function setupForm() {
           const entry_id = Number(entry_title_link.href.split("/")[4]);
           media_ids.push(entry_id);
         }
-        response = await turnMediaIdsIntoIds(media_ids);
-        if (response.errors) {
-          const error_message = `${ids.length}/${selected_entries.length} IDs were successfully obtained. Please look at the console for more information. Do you want to cancel the request?`;
-          if (await createErrorPopup(error_message)) {
-            closePopup();
-            return false;
+        while (true) {
+          response = await turnMediaIdsIntoIds(media_ids);
+          if (response.errors) {
+            const error_message = `${response.ids.length}/${selected_entries.length} IDs were successfully obtained. Please look at the console for more information. Do you want to retry or cancel the request?`;
+            if (await createErrorPopup(error_message)) {
+              closePopup();
+              return false;
+            }
+          } else {
+            break;
           }
         }
         const ids = response.ids;
         let dialog_data = [];
 
         if (values_to_be_changed.delete) {
-          for (let i = 0; i < ids.length && !is_cancelled; i++) {
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             const entry_title = selected_entries[i]
               .querySelector(".title > a")
               .innerText.trim();
@@ -658,15 +662,19 @@ async function setupForm() {
                 selected_entries[i].querySelector(".image").style
                   .backgroundImage,
                 i + 1,
-                ids.length
+                selected_entries.length
               )
             );
-            response = await deleteEntry(ids[i]);
-            if (response.errors) {
-              const error_message = `An error occurred while deleting <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
-              if (await createErrorPopup(error_message)) {
-                closePopup();
-                return false;
+            while (true) {
+              response = await deleteEntry(ids[i]);
+              if (response.errors) {
+                const error_message = `An error occurred while deleting <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
+                if (await createErrorPopup(error_message)) {
+                  closePopup();
+                  return false;
+                }
+              } else {
+                break;
               }
             }
           }
@@ -674,28 +682,31 @@ async function setupForm() {
           return true;
         }
         if (values_to_be_changed.favourite !== undefined) {
-          for (let i = 0; i < ids.length && !is_cancelled; i++) {
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             const entry_title = selected_entries[i]
               .querySelector(".title > a")
               .innerText.trim();
 
             if (!dialog_data[i]) {
-              const data = await getDataFromElementDialog(selected_entries[i]);
-              if (data.errors) {
-                const error_message = `An error occurred while getting info to ${
-                  values_to_be_changed.favourite
-                    ? `add <b>${entry_title}</b> to`
-                    : `remove <b>${entry_title}</b> from`
-                } favourites. Please look at the console for more information. Do you want to cancel the request?`;
-                if (await createErrorPopup(error_message)) {
-                  closePopup();
-                  return false;
+              while (true) {
+                response = await getDataFromElementDialog(selected_entries[i]);
+                if (response.errors) {
+                  const error_message = `An error occurred while getting info to ${
+                    values_to_be_changed.favourite
+                      ? `add <b>${entry_title}</b> to`
+                      : `remove <b>${entry_title}</b> from`
+                  } favourites. Please look at the console for more information. Do you want to retry or cancel the request?`;
+                  if (await createErrorPopup(error_message)) {
+                    closePopup();
+                    return false;
+                  }
+                } else {
+                  break;
                 }
               }
-              dialog_data[i] = data;
+              dialog_data[i] = response;
             }
             if (
-              dialog_data[i].is_favourite &&
               values_to_be_changed.favourite !== dialog_data[i].is_favourite
             ) {
               changePopupContent(
@@ -710,28 +721,29 @@ async function setupForm() {
                   selected_entries[i].querySelector(".image").style
                     .backgroundImage,
                   i + 1,
-                  ids.length
+                  selected_entries.length
                 )
               );
-              let errors;
-              if (is_list_anime) {
-                response = await toggleFavouriteForEntry({
-                  animeId: media_ids[i],
-                });
-                errors = response.errors;
-              } else {
-                response = await toggleFavouriteForEntry({
-                  mangaId: media_ids[i],
-                });
-                errors = response.errors;
-              }
-              if (errors) {
-                const error_message = `An error occurred while <b>${entry_title}</b> was being ${
-                  values_to_be_changed.favourite ? "added to" : "removed from"
-                } favourites. Please look at the console for more information. Do you want to cancel the request?`;
-                if (await createErrorPopup(error_message)) {
-                  closePopup();
-                  return false;
+              while (true) {
+                if (is_list_anime) {
+                  response = await toggleFavouriteForEntry({
+                    animeId: media_ids[i],
+                  });
+                } else {
+                  response = await toggleFavouriteForEntry({
+                    mangaId: media_ids[i],
+                  });
+                }
+                if (response.errors) {
+                  const error_message = `An error occurred while <b>${entry_title}</b> was being ${
+                    values_to_be_changed.favourite ? "added to" : "removed from"
+                  } favourites. Please look at the console for more information. Do you want to retry or cancel the request?`;
+                  if (await createErrorPopup(error_message)) {
+                    closePopup();
+                    return false;
+                  }
+                } else {
+                  break;
                 }
               }
             }
@@ -745,7 +757,7 @@ async function setupForm() {
           custom_lists_checkboxes.length > 0 &&
           custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
         ) {
-          for (let i = 0; i < ids.length && !is_cancelled; i++) {
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             changePopupContent(
               createEntryPopupContent(
                 `Updating: <b>${selected_entries[i]
@@ -754,18 +766,22 @@ async function setupForm() {
                 selected_entries[i].querySelector(".image").style
                   .backgroundImage,
                 i + 1,
-                ids.length
+                selected_entries.length
               )
             );
-            response = await updateEntry(ids[i], values_to_be_changed);
-            if (response.errors) {
-              const entry_title = selected_entries[i]
-                .querySelector(".title > a")
-                .innerText.trim();
-              const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
-              if (await createErrorPopup(error_message)) {
-                closePopup();
-                return false;
+            while (true) {
+              response = await updateEntry(ids[i], values_to_be_changed);
+              if (response.errors) {
+                const entry_title = selected_entries[i]
+                  .querySelector(".title > a")
+                  .innerText.trim();
+                const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
+                if (await createErrorPopup(error_message)) {
+                  closePopup();
+                  return false;
+                }
+              } else {
+                break;
               }
             }
           }
@@ -777,7 +793,7 @@ async function setupForm() {
         if (
           custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate)
         ) {
-          for (let i = 0; i < ids.length && !is_cancelled; i++) {
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             const entry_title = selected_entries[i]
               .querySelector(".title > a")
               .innerText.trim();
@@ -790,14 +806,14 @@ async function setupForm() {
                 selected_entries[i].querySelector(".image").style
                   .backgroundImage,
                 i + 1,
-                ids.length
+                selected_entries.length
               )
             );
             let final_custom_lists = [];
             if (!dialog_data[i]) {
               const data = await getDataFromElementDialog(selected_entries[i]);
               if (data.errors) {
-                const error_message = `An error occurred while getting info to update <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
+                const error_message = `An error occurred while getting info to update <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
                 if (await createErrorPopup(error_message)) {
                   closePopup();
                   return false;
@@ -820,15 +836,19 @@ async function setupForm() {
                 }
               }
             }
-            response = await updateEntry(ids[i], {
-              ...values_to_be_changed,
-              customLists: final_custom_lists,
-            });
-            if (response.errors) {
-              const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
-              if (await createErrorPopup(error_message)) {
-                closePopup();
-                return false;
+            while (true) {
+              response = await updateEntry(ids[i], {
+                ...values_to_be_changed,
+                customLists: final_custom_lists,
+              });
+              if (response.errors) {
+                const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
+                if (await createErrorPopup(error_message)) {
+                  closePopup();
+                  return false;
+                }
+              } else {
+                break;
               }
             }
           }
@@ -836,16 +856,42 @@ async function setupForm() {
           return true;
         }
 
-        changePopupContent(
-          "Updating all the entries at once. Not possible to cancel."
-        );
-        response = await batchUpdateEntries(ids, values_to_be_changed);
-        closePopup();
-        if (response.errors) {
-          const error_message = `An error occurred while batch updating. Please look at the console for more information.`;
-          await createPopup("ERROR", error_message);
-          return false;
+        // Don't batch update if not required
+        if (
+          status_enabled_checkbox.checked ||
+          score_enabled_checkbox.checked ||
+          (is_list_anime &&
+            (progress_inputs.episode_enabled_checkbox.checked ||
+              progress_inputs.rewatches_enabled_checkbox.checked)) ||
+          (!is_list_anime &&
+            (progress_inputs.chapter_enabled_checkbox.checked ||
+              progress_inputs.volume_enabled_checkbox.checked ||
+              progress_inputs.rereads_enabled_checkbox.checked)) ||
+          start_date_enabled_checkbox.checked ||
+          finish_date_enabled_checkbox.checked ||
+          notes_enabled_checkbox.checked ||
+          (custom_lists.length > 0 &&
+            !hide_from_status_list_checkbox.indeterminate) ||
+          !private_checkbox.indeterminate
+        ) {
+          changePopupContent(
+            "Updating all the entries at once. Not possible to cancel."
+          );
+          while (true) {
+            response = await batchUpdateEntries(ids, values_to_be_changed);
+            if (response.errors) {
+              const error_message = `An error occurred while batch updating. Please look at the console for more information. Do you want to retry or cancel the request?`;
+              if (await createErrorPopup(error_message)) {
+                closePopup();
+                return false;
+              }
+            } else {
+              break;
+            }
+          }
         }
+
+        closePopup();
         return true;
       })();
 

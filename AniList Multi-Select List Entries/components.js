@@ -691,8 +691,8 @@ function createErrorPopup(text) {
   const buttons = document.createElement("div");
   buttons.className = "el-message-box__btns";
   container.append(buttons);
-  const ignore_button = createCancelButton(buttons, "Ignore");
   const cancel_button = createDangerButton(buttons, "Cancel");
+  const retry_button = createButton(buttons, "Retry");
 
   return new Promise((resolve) => {
     wrapper.onclick = (e) => {
@@ -702,18 +702,18 @@ function createErrorPopup(text) {
       }
       modal.remove();
       wrapper.remove();
-      resolve(false);
+      resolve(true);
     };
-    close_button.onclick = ignore_button.onclick = () => {
-      modal.remove();
-      wrapper.remove();
-      resolve(false);
-    };
-
-    cancel_button.onclick = () => {
+    close_button.onclick = cancel_button.onclick = () => {
       modal.remove();
       wrapper.remove();
       resolve(true);
+    };
+
+    retry_button.onclick = () => {
+      modal.remove();
+      wrapper.remove();
+      resolve(false);
     };
   });
 }
