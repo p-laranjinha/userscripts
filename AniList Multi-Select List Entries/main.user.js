@@ -17,12 +17,10 @@
 // ==/UserScript==
 
 // TODO: add scrollbar to dropdown
-// TODO: check what validation errors might occur (like having finish date before start date)
 // TODO: see if anything gets saved even when deleted (to know if other actions have to be done when deletion is selected)
 // TODO: add info explaining what indeterminate checkboxes are
 // TODO: make advanced scores work
 // TODO: delete waitForElementToBeDeleted if not required
-// TODO: check if we can send empty mutation requests for stuff like dates (and see what default date inputs return)
 // TODO: maybe put all/most inline styling of components in the css file
 // TODO: maybe make getDataFromElementDialog() into a function that queries the api instead
 // TODO: fix clicking anywhere in a dialog closing it
@@ -499,20 +497,34 @@ async function setupForm() {
         }
       }
       if (start_date_enabled_checkbox.checked) {
-        action_list += `<li>Set <u>Start Date</u> to <b>${start_date_input.value}</b>.</li>`;
-        values_to_be_changed.startedAt = {
+        const date = {
           year: start_date_input.value.split("-")[0],
           month: start_date_input.value.split("-")[1],
           day: start_date_input.value.split("-")[2],
         };
+
+        if (!date.year || !date.month || !date.day) {
+          action_list += `<li>Set <u>Start Date</u> to <b>nothing</b>.</li>`;
+          values_to_be_changed.startedAt = {};
+        } else {
+          action_list += `<li>Set <u>Start Date</u> to <b>${start_date_input.value}</b>.</li>`;
+          values_to_be_changed.startedAt = date;
+        }
       }
       if (finish_date_enabled_checkbox.checked) {
-        action_list += `<li>Set <u>Finish Date</u> to <b>${finish_date_input.value}</b>.</li>`;
-        values_to_be_changed.completedAt = {
-          year: start_date_input.value.split("-")[0],
-          month: start_date_input.value.split("-")[1],
-          day: start_date_input.value.split("-")[2],
+        const date = {
+          year: finish_date_input.value.split("-")[0],
+          month: finish_date_input.value.split("-")[1],
+          day: finish_date_input.value.split("-")[2],
         };
+
+        if (!date.year || !date.month || !date.day) {
+          action_list += `<li>Set <u>Finish Date</u> to <b>nothing</b>.</li>`;
+          values_to_be_changed.completedAt = {};
+        } else {
+          action_list += `<li>Set <u>Finish Date</u> to <b>${finish_date_input.value}</b>.</li>`;
+          values_to_be_changed.completedAt = date;
+        }
       }
       if (notes_enabled_checkbox.checked) {
         action_list += `<li>Set <u>Notes</u> to <b>${notes_input.value}</b>.</li>`;
@@ -577,6 +589,7 @@ async function setupForm() {
     );
 
     confirm_popup_button.onclick = async () => {
+      let response;
       // Content is in yet another function so I can do stuff after it returns anywhere
       const success = await (async () => {
         let is_cancelled = false;
@@ -597,14 +610,15 @@ async function setupForm() {
           const entry_id = Number(entry_title_link.href.split("/")[4]);
           media_ids.push(entry_id);
         }
-        ({ ids, errors } = await turnMediaIdsIntoIds(media_ids));
-        if (errors) {
+        response = await turnMediaIdsIntoIds(media_ids);
+        if (response.errors) {
           const error_message = `${ids.length}/${selected_entries.length} IDs were successfully obtained. Please look at the console for more information. Do you want to cancel the request?`;
           if (await createErrorPopup(error_message)) {
             closePopup();
             return false;
           }
         }
+        const ids = response.ids;
         let dialog_data = [];
 
         if (values_to_be_changed.delete) {
@@ -621,8 +635,8 @@ async function setupForm() {
                 ids.length
               )
             );
-            ({ errors } = await deleteEntry(ids[i]));
-            if (errors) {
+            response = await deleteEntry(ids[i]);
+            if (response.errors) {
               const error_message = `An error occurred while deleting <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
               if (await createErrorPopup(error_message)) {
                 closePopup();
@@ -675,15 +689,15 @@ async function setupForm() {
               );
               let errors;
               if (is_list_anime) {
-                ({ errors: tmp_errors } = await toggleFavouriteForEntry({
+                response = await toggleFavouriteForEntry({
                   animeId: media_ids[i],
-                }));
-                errors = tmp_errors;
+                });
+                errors = response.errors;
               } else {
-                ({ errors: tmp_errors } = await toggleFavouriteForEntry({
+                response = await toggleFavouriteForEntry({
                   mangaId: media_ids[i],
-                }));
-                errors = tmp_errors;
+                });
+                errors = response.errors;
               }
               if (errors) {
                 const error_message = `An error occurred while <b>${entry_title}</b> was being ${
@@ -717,8 +731,8 @@ async function setupForm() {
                 ids.length
               )
             );
-            ({ errors } = await updateEntry(ids[i], values_to_be_changed));
-            if (errors) {
+            response = await updateEntry(ids[i], values_to_be_changed);
+            if (response.errors) {
               const entry_title = selected_entries[i]
                 .querySelector(".title > a")
                 .innerText.trim();
@@ -780,11 +794,11 @@ async function setupForm() {
                 }
               }
             }
-            ({ errors } = await updateEntry(ids[i], {
+            response = await updateEntry(ids[i], {
               ...values_to_be_changed,
               customLists: final_custom_lists,
-            }));
-            if (errors) {
+            });
+            if (response.errors) {
               const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to cancel the request?`;
               if (await createErrorPopup(error_message)) {
                 closePopup();
@@ -799,9 +813,9 @@ async function setupForm() {
         changePopupContent(
           "Updating all the entries at once. Not possible to cancel."
         );
-        ({ errors } = await batchUpdateEntries(ids, values_to_be_changed));
+        response = await batchUpdateEntries(ids, values_to_be_changed);
         closePopup();
-        if (errors) {
+        if (response.errors) {
           const error_message = `An error occurred while batch updating. Please look at the console for more information.`;
           await createPopup("ERROR", error_message);
           return false;

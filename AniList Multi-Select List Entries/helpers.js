@@ -118,14 +118,14 @@ async function getDataFromElementDialog(element) {
  * @param {string[]} [values.customLists]
  * @param {number[]} [values.advancedScores]
  * @param {Object} [values.startedAt]
- * @param {number} values.startedAt.year Should be an int.
- * @param {number} values.startedAt.month Should be an int.
- * @param {number} values.startedAt.day Should be an int.
+ * @param {number} [values.startedAt.year] Should be an int.
+ * @param {number} [values.startedAt.month] Should be an int.
+ * @param {number} [values.startedAt.day] Should be an int.
  * @param {Object} [values.completedAt]
- * @param {number} values.completedAt.year Should be an int.
- * @param {number} values.completedAt.month Should be an int.
- * @param {number} values.completedAt.day Should be an int.
- * @returns {Promise<{errors: FetchError[]} | void>}
+ * @param {number} [values.completedAt.year] Should be an int.
+ * @param {number} [values.completedAt.month] Should be an int.
+ * @param {number} [values.completedAt.day] Should be an int.
+ * @returns {Promise<{errors: FetchError[]} | {}>}
  */
 async function updateEntry(id, values) {
   const query = `
@@ -182,6 +182,8 @@ async function updateEntry(id, values) {
   if (errors) {
     return { errors };
   }
+  // I'm returning empty object instead of void so that checking for errors outside is easier
+  return {};
 }
 
 /**
@@ -200,14 +202,14 @@ async function updateEntry(id, values) {
  * @param {boolean} [values.hiddenFromStatusLists]
  * @param {number[]} [values.advancedScores]
  * @param {Object} [values.startedAt]
- * @param {number} values.startedAt.year Should be an int.
- * @param {number} values.startedAt.month Should be an int.
- * @param {number} values.startedAt.day Should be an int.
+ * @param {number} [values.startedAt.year] Should be an int.
+ * @param {number} [values.startedAt.month] Should be an int.
+ * @param {number} [values.startedAt.day] Should be an int.
  * @param {Object} [values.completedAt]
- * @param {number} values.completedAt.year Should be an int.
- * @param {number} values.completedAt.month Should be an int.
- * @param {number} values.completedAt.day Should be an int.
- * @returns {Promise<{errors: FetchError[]} | void>}
+ * @param {number} [values.completedAt.year] Should be an int.
+ * @param {number} [values.completedAt.month] Should be an int.
+ * @param {number} [values.completedAt.day] Should be an int.
+ * @returns {Promise<{errors: FetchError[]} | {}>}
  */
 async function batchUpdateEntries(ids, values) {
   const query = `
@@ -262,12 +264,14 @@ async function batchUpdateEntries(ids, values) {
   if (errors) {
     return { errors };
   }
+  // I'm returning empty object instead of void so that checking for errors outside is easier
+  return {};
 }
 
 /**
  * Make a GraphQL mutation to toggle the favourite status for an entry on AniList
  * @param {{animeId: number} | {mangaId: number}} id Should be ints.
- * @returns {Promise<{errors: FetchError[]} | void>}
+ * @returns {Promise<{errors: FetchError[]} | {}>}
  */
 async function toggleFavouriteForEntry(id) {
   const query = `
@@ -296,12 +300,14 @@ async function toggleFavouriteForEntry(id) {
   if (errors) {
     return { errors };
   }
+  // I'm returning empty object instead of void so that checking for errors outside is easier
+  return {};
 }
 
 /**
  * Make a GraphQL mutation to delete an entry on AniList
  * @param {number} id Should be an int.
- * @returns {Promise<{errors: FetchError[]} | void>}
+ * @returns {Promise<{errors: FetchError[]} | {}>}
  */
 async function deleteEntry(id) {
   const query = `
@@ -339,6 +345,8 @@ async function deleteEntry(id) {
       ],
     };
   }
+  // I'm returning empty object instead of void so that checking for errors outside is easier
+  return {};
 }
 
 /**
