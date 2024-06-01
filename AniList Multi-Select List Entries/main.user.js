@@ -12,6 +12,8 @@
 // @require     components.js
 // @require     helpers.js
 // @resource    GLOBAL_CSS global.css
+// @resource    PLUS_SVG plus.svg
+// @resource    MINUS_SVG minus.svg
 // ==/UserScript==
 
 // TODO: add scrollbar to dropdown
@@ -20,30 +22,18 @@
 // TODO: add info explaining what indeterminate checkboxes are
 // TODO: make advanced scores work
 // TODO: delete waitForElementToBeDeleted if not required
-// TODO: check if we can send empty mutation requests for stuff like dates
+// TODO: check if we can send empty mutation requests for stuff like dates (and see what default date inputs return)
 // TODO: maybe put all/most inline styling of components in the css file
 // TODO: maybe make getDataFromElementDialog() into a function that queries the api instead
 // TODO: fix clicking anywhere in a dialog closing it
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
+const PLUS_SVG = GM.getResourceText("PLUS_SVG");
+const MINUS_SVG = GM.getResourceText("MINUS_SVG");
 
 let WAS_LAST_LIST_ANIME = false;
 let FORM;
-
-const plus_svg = /*svg*/ `
-  <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="plus-h" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="svg-inline--fa fa-plus-h fa-w-16 fa-lg">
-    <!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
-    <path fill="currentColor" d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z"/>
-  </svg>
-`;
-
-const minus_svg = /*svg*/ `
-  <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="minus-h" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="svg-inline--fa fa-minus-h fa-w-16 fa-lg">
-    <!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
-    <path fill="currentColor" d="M432 256c0 17.7-14.3 32-32 32L48 288c-17.7 0-32-14.3-32-32s14.3-32 32-32l352 0c17.7 0 32 14.3 32 32z"/>
-  </svg>
-`;
 
 let current_url = null;
 let new_url = null;
@@ -106,12 +96,12 @@ async function setupButtons() {
 
     const add_button = document.createElement("div");
     add_button.className = "rtonne-anilist-multiselect-addbutton edit";
-    add_button.innerHTML = plus_svg;
+    add_button.innerHTML = PLUS_SVG;
     cover.querySelector(".edit").after(add_button);
 
     const remove_button = document.createElement("div");
     remove_button.className = "rtonne-anilist-multiselect-removebutton edit";
-    remove_button.innerHTML = minus_svg;
+    remove_button.innerHTML = MINUS_SVG;
     add_button.after(remove_button);
 
     add_button.onclick = () => {
