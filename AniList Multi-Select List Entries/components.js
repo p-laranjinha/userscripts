@@ -493,13 +493,18 @@ function createConfirmPopup(title_text, message_text) {
   const cancel_button = createCancelButton(buttons, "Cancel");
   const confirm_button = createButton(buttons, "Confirm");
 
-  close_button.onclick =
-    cancel_button.onclick =
-    wrapper.onclick =
-      () => {
-        modal.remove();
-        wrapper.remove();
-      };
+  wrapper.addEventListener("click", (e) => {
+    // e.stopPropagation() doesn't seem to work so this condition is here
+    if (e.target !== wrapper) {
+      return;
+    }
+    modal.remove();
+    wrapper.remove();
+  });
+  close_button.onclick = cancel_button.onclick = () => {
+    modal.remove();
+    wrapper.remove();
+  };
 
   // Used .addEventListener instead of .onclick
   // so either can be used outside this function
@@ -559,7 +564,11 @@ function createUpdatableCancelPopup(initial_title, initial_content) {
 
   // Used .addEventListener instead of .onclick
   // so either can be used outside this function
-  wrapper.addEventListener("click", () => {
+  wrapper.addEventListener("click", (e) => {
+    // e.stopPropagation() doesn't seem to work so this condition is here
+    if (e.target !== wrapper) {
+      return;
+    }
     closePopup();
   });
   cancel_button.addEventListener("click", () => {
@@ -686,14 +695,20 @@ function createErrorPopup(text) {
   const cancel_button = createDangerButton(buttons, "Cancel");
 
   return new Promise((resolve) => {
-    close_button.onclick =
-      ignore_button.onclick =
-      wrapper.onclick =
-        () => {
-          modal.remove();
-          wrapper.remove();
-          resolve(false);
-        };
+    wrapper.onclick = (e) => {
+      // e.stopPropagation() doesn't seem to work so this condition is here
+      if (e.target !== wrapper) {
+        return;
+      }
+      modal.remove();
+      wrapper.remove();
+      resolve(false);
+    };
+    close_button.onclick = ignore_button.onclick = () => {
+      modal.remove();
+      wrapper.remove();
+      resolve(false);
+    };
 
     cancel_button.onclick = () => {
       modal.remove();
@@ -751,13 +766,19 @@ function createPopup(title_text, message_text) {
   const ok_button = createButton(buttons, "Ok");
 
   return new Promise((resolve) => {
-    close_button.onclick =
-      wrapper.onclick =
-      ok_button.onclick =
-        () => {
-          modal.remove();
-          wrapper.remove();
-          resolve();
-        };
+    wrapper.onclick = (e) => {
+      // e.stopPropagation() doesn't seem to work so this condition is here
+      if (e.target !== wrapper) {
+        return;
+      }
+      modal.remove();
+      wrapper.remove();
+      resolve();
+    };
+    close_button.onclick = ok_button.onclick = () => {
+      modal.remove();
+      wrapper.remove();
+      resolve();
+    };
   });
 }

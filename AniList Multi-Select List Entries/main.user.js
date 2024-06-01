@@ -23,7 +23,6 @@
 // TODO: delete waitForElementToBeDeleted if not required
 // TODO: maybe put all/most inline styling of components in the css file
 // TODO: maybe make getDataFromElementDialog() into a function that queries the api instead
-// TODO: fix clicking anywhere in a dialog closing it
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
