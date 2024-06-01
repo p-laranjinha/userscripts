@@ -24,9 +24,10 @@
   display: none !important;
 }
 
-body.rtonne-anilist-multiselect-modal-hidden .v-modal,
-body.rtonne-anilist-multiselect-dialog-hidden .list-editor-wrap,
-body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
+body.rtonne-anilist-multiselect-form-failed
+  .rtonne-anilist-multiselect-addbutton,
+body.rtonne-anilist-multiselect-form-failed
+  .rtonne-anilist-multiselect-removebutton {
   display: none !important;
 }
 

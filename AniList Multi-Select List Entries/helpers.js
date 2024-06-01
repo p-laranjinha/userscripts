@@ -31,47 +31,55 @@ function waitForElements(selector) {
 }
 
 /**
- *
- * @param {HTMLElement} element The element of the anime/manga entry
- * @returns {Promise<{custom_lists: {name: string, checked: boolean}[], is_favourite: boolean} | {errors: {message: Error}[]}>}
+ * Get data from a group of entries.
+ * @param {int[]} media_ids
+ * @param {"id"|"isFavourite"|"customLists"|"advancedScores"} field
+ * @returns {Promise<{data: any[]} | {data: data[], errors: FetchError[]}>}
  */
-async function getDataFromElementDialog(element) {
-  try {
-    let data = {};
-    const edit_button = element.querySelector(
-      ".edit:not([class^='rtonne-anilist-multiselect'])"
-    );
-    edit_button.click();
-    const [close_dialog_button] = await waitForElements(
-      ".el-dialog__headerbtn"
-    );
-
-    // Get the custom lists that exist
-    const [custom_lists_container] = await waitForElements(".custom-lists");
-    const custom_lists_checkboxes =
-      custom_lists_container.querySelectorAll(".checkbox");
-    data.custom_lists = [];
-    for (const checkbox of custom_lists_checkboxes) {
-      let custom_list = {};
-      custom_list.name = checkbox
-        .querySelector(".el-checkbox__label")
-        .innerText.trim();
-      custom_list.checked = checkbox
-        .querySelector(".el-checkbox")
-        .classList.contains("is-checked");
-      data.custom_lists.push(custom_list);
+async function getDataFromEntries(media_ids, field) {
+  const query = `query ($media_ids: [Int], $page: Int, $per_page: Int) {
+    Page(page: $page, perPage: $per_page) {
+      mediaList(mediaId_in: $media_ids, userName: "${
+        window.location.href.split("/")[4]
+      }", compareWithAuthList: true) {
+        ${field !== "isFavourite" ? field : "media{isFavourite}"}
+      }
     }
+  }`;
+  const page_size = 50;
 
-    // Get if the entry is on favourites
-    const [favourite_button] = await waitForElements(".favourite");
-    data.is_favourite = favourite_button.classList.contains("isFavourite");
-
-    close_dialog_button.click();
-    return data;
-  } catch (e) {
-    console.error(e);
-    return { errors: [{ message: e }] };
+  let errors;
+  let data = [];
+  for (let i = 0; i < media_ids.length; i += page_size) {
+    const page = media_ids.slice(i, i + page_size);
+    const variables = {
+      media_ids: page,
+      page: 1,
+      per_page: page_size,
+    };
+    const response = await anilistFetch(
+      JSON.stringify({
+        query: query,
+        variables: variables,
+      })
+    );
+    if (response.errors) {
+      errors = response.errors;
+      break;
+    }
+    data.push(
+      ...response.data["Page"]["mediaList"].map((entry) => {
+        if (field === "isFavourite") {
+          return entry["media"]["isFavourite"];
+        }
+        return entry[field];
+      })
+    );
   }
+  if (errors) {
+    return { data };
+  }
+  return { data, errors };
 }
 
 /**
@@ -318,53 +326,6 @@ async function deleteEntry(id) {
   }
   // I'm returning empty object instead of void so that checking for errors outside is easier
   return {};
-}
-
-/**
- * Turn media_ids (identifies the manga/anime itself) into ids (identifies a users instance of the manga/anime).
- * @param {int[]} media_ids
- * @returns {Promise<{ids: int[]} | {ids: int[], errors: FetchError[]}>}
- */
-async function turnMediaIdsIntoIds(media_ids) {
-  const query = `query ($media_ids: [Int], $page: Int, $per_page: Int) {
-    Page(page: $page, perPage: $per_page) {
-      mediaList(mediaId_in: $media_ids, userName: "${
-        window.location.href.split("/")[4]
-      }", compareWithAuthList: true) {
-        id
-      }
-    }
-  }`;
-  const page_size = 50;
-
-  let total_errors = [];
-  let ids = [];
-  for (let i = 0; i < media_ids.length; i += page_size) {
-    const page = media_ids.slice(i, i + page_size);
-    const variables = {
-      media_ids: page,
-      page: 1,
-      per_page: page_size,
-    };
-    const { data, errors } = await anilistFetch(
-      JSON.stringify({
-        query: query,
-        variables: variables,
-      })
-    );
-    if (errors) {
-      total_errors = total_errors.concat(errors);
-      // I'm not continuing here because having the returned ids in a
-      // different order to the media_ids would complicate showing the
-      // entry dialog correctly during processing.
-      break;
-    }
-    ids.push(...data["Page"]["mediaList"].map((entry) => entry["id"]));
-  }
-  if (total_errors.length === 0) {
-    return { ids };
-  }
-  return { ids, errors: total_errors };
 }
 
 /**

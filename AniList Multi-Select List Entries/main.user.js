@@ -17,10 +17,9 @@
 // ==/UserScript==
 
 // TODO: add scrollbar to dropdown
-// TODO: see if anything gets saved even when deleted (to know if other actions have to be done when deletion is selected)
 // TODO: make advanced scores work
 // TODO: maybe put all/most inline styling of components in the css file (search .style)
-// TODO: make getDataFromElementDialog() into a function that queries the api instead (maybe join it with turnMediaIdsIntoIds)
+// TODO: test: add a different amount of entries to 2 custom lists (while having repeats in both) and remove everything
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -174,17 +173,6 @@ async function setupForm() {
     score_max = 3;
   }
 
-  document.body.className +=
-    " rtonne-anilist-multiselect-modal-hidden rtonne-anilist-multiselect-dialog-hidden";
-  // Sending document to getCustomListsFromElement should use the first entry
-  const custom_lists = (
-    await getDataFromElementDialog(document)
-  ).custom_lists.map((custom_list) => custom_list.name);
-  document.body.classList.remove("rtonne-anilist-multiselect-modal-hidden");
-  document.body.classList.remove("rtonne-anilist-multiselect-dialog-hidden");
-
-  // Its a shame we call getDataFromElementDialog() before checking if a form has already been created,
-  // but its better we do even so because multiple forms are created otherwise
   let previous_form = document.querySelector(
     ".rtonne-anilist-multiselect-form"
   );
@@ -193,22 +181,48 @@ async function setupForm() {
   }
   // Create the form
   const form = document.createElement("div");
-  form.className = "filters rtonne-anilist-multiselect-form";
+  form.className = "rtonne-anilist-multiselect-form";
   form.style.display = "none";
-  form.style.position = "relative";
   container.append(form);
 
+  // We get custom_lists after creating the form so we can do it only once
+
+  let custom_lists = [];
+  while (true) {
+    const first_media_id = Number(
+      document
+        .querySelector(".entry .title > a, .entry-card .title > a")
+        .href.split("/")[4]
+    );
+    // move this below the form creation
+    const custom_lists_response = await getDataFromEntries(
+      [first_media_id],
+      "customLists"
+    );
+    if (custom_lists_response.errors) {
+      const error_message = `An error occurred while getting the available custom lists. Please look at the console for more information. Do you want to retry or cancel the request?`;
+      if (await createErrorPopup(error_message)) {
+        document.body.className += " rtonne-anilist-multiselect-form-failed";
+        return;
+      }
+    } else {
+      custom_lists = custom_lists_response.data[0]
+        ? Object.keys(custom_lists_response.data[0])
+        : [];
+      break;
+    }
+  }
+
   const help = document.createElement("div");
+  help.className = "rtonne-anilist-multiselect-form-help";
   help.innerHTML =
     "ⓘ Because values can be empty, there are 2 ways to enable them. The first one is via an Enable checkbox;" +
     " the second one is using indeterminate checkboxes, where a dark square and strikethrough text means they're not enabled.";
   help.style.width = "100%";
-  help.style.position = "absolute";
-  help.style.left = 0;
-  help.style.top = "100%";
   help.style.paddingTop = "20px";
   help.style.fontSize = "smaller";
-  form.append(help);
+  help.style.display = "none";
+  form.after(help);
 
   const status_container = document.createElement("div");
   status_container.id = "rtonne-anilist-multiselect-status-input";
@@ -615,7 +629,6 @@ async function setupForm() {
     );
 
     confirm_popup_button.onclick = async () => {
-      let response;
       // Content is in yet another function so I can do stuff after it returns anywhere
       const success = await (async () => {
         let is_cancelled = false;
@@ -632,14 +645,16 @@ async function setupForm() {
 
         let media_ids = [];
         for (const entry of selected_entries) {
-          const entry_title_link = entry.querySelector(".title > a");
-          const entry_id = Number(entry_title_link.href.split("/")[4]);
-          media_ids.push(entry_id);
+          const media_id = Number(
+            entry.querySelector(".title > a").href.split("/")[4]
+          );
+          media_ids.push(media_id);
         }
+        let ids_response;
         while (true) {
-          response = await turnMediaIdsIntoIds(media_ids);
-          if (response.errors) {
-            const error_message = `${response.ids.length}/${selected_entries.length} IDs were successfully obtained. Please look at the console for more information. Do you want to retry or cancel the request?`;
+          ids_response = await getDataFromEntries(media_ids, "id");
+          if (ids_response.errors) {
+            const error_message = `${ids_response.ids.length}/${selected_entries.length} IDs were successfully obtained. Please look at the console for more information. Do you want to retry or cancel the request?`;
             if (await createErrorPopup(error_message)) {
               closePopup();
               return false;
@@ -648,7 +663,7 @@ async function setupForm() {
             break;
           }
         }
-        const ids = response.ids;
+        const ids = ids_response.data;
         let dialog_data = [];
 
         if (values_to_be_changed.delete) {
@@ -666,8 +681,8 @@ async function setupForm() {
               )
             );
             while (true) {
-              response = await deleteEntry(ids[i]);
-              if (response.errors) {
+              const delete_response = await deleteEntry(ids[i]);
+              if (delete_response.errors) {
                 const error_message = `An error occurred while deleting <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
                 if (await createErrorPopup(error_message)) {
                   closePopup();
@@ -682,32 +697,29 @@ async function setupForm() {
           return true;
         }
         if (values_to_be_changed.favourite !== undefined) {
+          let is_favourite_response;
+          while (true) {
+            is_favourite_response = getDataFromEntries(
+              media_ids,
+              "isFavourite"
+            );
+            if (is_favourite_response.errors) {
+              const error_message = `An error occurred while getting info to edit favourites. Please look at the console for more information. Do you want to retry or cancel the request?`;
+              if (await createErrorPopup(error_message)) {
+                closePopup();
+                return false;
+              }
+            } else {
+              break;
+            }
+          }
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             const entry_title = selected_entries[i]
               .querySelector(".title > a")
               .innerText.trim();
-
-            if (!dialog_data[i]) {
-              while (true) {
-                response = await getDataFromElementDialog(selected_entries[i]);
-                if (response.errors) {
-                  const error_message = `An error occurred while getting info to ${
-                    values_to_be_changed.favourite
-                      ? `add <b>${entry_title}</b> to`
-                      : `remove <b>${entry_title}</b> from`
-                  } favourites. Please look at the console for more information. Do you want to retry or cancel the request?`;
-                  if (await createErrorPopup(error_message)) {
-                    closePopup();
-                    return false;
-                  }
-                } else {
-                  break;
-                }
-              }
-              dialog_data[i] = response;
-            }
             if (
-              values_to_be_changed.favourite !== dialog_data[i].is_favourite
+              values_to_be_changed.favourite !==
+              is_favourite_response.data[i].is_favourite
             ) {
               changePopupContent(
                 createEntryPopupContent(
@@ -725,16 +737,17 @@ async function setupForm() {
                 )
               );
               while (true) {
+                let toggle_favourite_response;
                 if (is_list_anime) {
-                  response = await toggleFavouriteForEntry({
+                  toggle_favourite_response = await toggleFavouriteForEntry({
                     animeId: media_ids[i],
                   });
                 } else {
-                  response = await toggleFavouriteForEntry({
+                  toggle_favourite_response = await toggleFavouriteForEntry({
                     mangaId: media_ids[i],
                   });
                 }
-                if (response.errors) {
+                if (toggle_favourite_response.errors) {
                   const error_message = `An error occurred while <b>${entry_title}</b> was being ${
                     values_to_be_changed.favourite ? "added to" : "removed from"
                   } favourites. Please look at the console for more information. Do you want to retry or cancel the request?`;
@@ -770,8 +783,11 @@ async function setupForm() {
               )
             );
             while (true) {
-              response = await updateEntry(ids[i], values_to_be_changed);
-              if (response.errors) {
+              const update_response = await updateEntry(
+                ids[i],
+                values_to_be_changed
+              );
+              if (update_response.errors) {
                 const entry_title = selected_entries[i]
                   .querySelector(".title > a")
                   .innerText.trim();
@@ -793,6 +809,22 @@ async function setupForm() {
         if (
           custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate)
         ) {
+          let custom_lists_response;
+          while (true) {
+            custom_lists_response = await getDataFromEntries(
+              media_ids,
+              "customLists"
+            );
+            if (custom_lists_response.errors) {
+              const error_message = `An error occurred while getting info to update the custom lists. Please look at the console for more information. Do you want to retry or cancel the request?`;
+              if (await createErrorPopup(error_message)) {
+                closePopup();
+                return false;
+              }
+            } else {
+              break;
+            }
+          }
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             const entry_title = selected_entries[i]
               .querySelector(".title > a")
@@ -810,38 +842,24 @@ async function setupForm() {
               )
             );
             let final_custom_lists = [];
-            if (!dialog_data[i]) {
-              const data = await getDataFromElementDialog(selected_entries[i]);
-              if (data.errors) {
-                const error_message = `An error occurred while getting info to update <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
-                if (await createErrorPopup(error_message)) {
-                  closePopup();
-                  return false;
-                }
-              }
-              dialog_data[i] = data;
-            }
-            if (!dialog_data[i].custom_lists) {
-              continue;
-            }
-            let entry_custom_lists = dialog_data[i].custom_lists;
+            let entry_custom_lists = custom_lists_response.data[i];
             for (let j = 0; j < custom_lists.length; j++) {
               if (!custom_lists_checkboxes[j].indeterminate) {
                 if (custom_lists_checkboxes[j].checked) {
                   final_custom_lists.push(custom_lists[j]);
                 }
               } else {
-                if (entry_custom_lists[j].checked) {
+                if (entry_custom_lists[custom_lists[j]]) {
                   final_custom_lists.push(custom_lists[j]);
                 }
               }
             }
             while (true) {
-              response = await updateEntry(ids[i], {
+              const update_response = await updateEntry(ids[i], {
                 ...values_to_be_changed,
                 customLists: final_custom_lists,
               });
-              if (response.errors) {
+              if (update_response.errors) {
                 const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
                 if (await createErrorPopup(error_message)) {
                   closePopup();
@@ -878,8 +896,11 @@ async function setupForm() {
             "Updating all the entries at once. Not possible to cancel."
           );
           while (true) {
-            response = await batchUpdateEntries(ids, values_to_be_changed);
-            if (response.errors) {
+            const batch_update_response = await batchUpdateEntries(
+              ids,
+              values_to_be_changed
+            );
+            if (batch_update_response.errors) {
               const error_message = `An error occurred while batch updating. Please look at the console for more information. Do you want to retry or cancel the request?`;
               if (await createErrorPopup(error_message)) {
                 closePopup();
@@ -914,8 +935,10 @@ async function setupForm() {
     } selected.`;
     if (selected_entries > 0) {
       form.style.display = "flex";
+      help.style.display = "block";
     } else {
       form.style.display = "none";
+      help.style.display = "none";
     }
   }).observe(document.querySelector(".lists"), {
     childList: true,
