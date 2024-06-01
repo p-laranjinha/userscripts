@@ -18,11 +18,9 @@
 
 // TODO: add scrollbar to dropdown
 // TODO: see if anything gets saved even when deleted (to know if other actions have to be done when deletion is selected)
-// TODO: add info explaining what indeterminate checkboxes are
 // TODO: make advanced scores work
-// TODO: maybe put all/most inline styling of components in the css file
+// TODO: maybe put all/most inline styling of components in the css file (search .style)
 // TODO: make getDataFromElementDialog() into a function that queries the api instead
-// TODO: remove unnecessary return variables from queries
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -197,7 +195,20 @@ async function setupForm() {
   const form = document.createElement("div");
   form.className = "filters rtonne-anilist-multiselect-form";
   form.style.display = "none";
+  form.style.position = "relative";
   container.append(form);
+
+  const help = document.createElement("div");
+  help.innerHTML =
+    "ⓘ Because values can be empty, there are 2 ways to enable them. The first one is via an Enable checkbox;" +
+    "the second one is using indeterminate checkboxes, where a dark square and strikethrough text means they're not enabled.";
+  help.style.width = "100%";
+  help.style.position = "absolute";
+  help.style.left = 0;
+  help.style.top = "100%";
+  help.style.paddingTop = "20px";
+  help.style.fontSize = "smaller";
+  form.append(help);
 
   const status_container = document.createElement("div");
   status_container.id = "rtonne-anilist-multiselect-status-input";

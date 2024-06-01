@@ -136,7 +136,6 @@ async function updateEntry(id, values) {
       completedAt: $completedAt
     ) {
       id
-      updatedAt
     }
   }`;
 
@@ -218,7 +217,6 @@ async function batchUpdateEntries(ids, values) {
       completedAt: $completedAt
     ) {
       id
-      updatedAt
     }
   }`;
 

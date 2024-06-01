@@ -60,9 +60,11 @@ body.rtonne-anilist-multiselect-messagebox-hidden .el-message-box {
 /* Form styling */
 .rtonne-anilist-multiselect-form {
   margin-top: 32px;
-  border-radius: 3px;
+  border-radius: 1px;
   box-shadow: 0 0 0 8px rgb(var(--color-background)),
-    0 0 4px 10px rgb(var(--color-background)), 0 0 0 12px rgb(var(--color-blue));
+    0 0 4px 10px rgb(var(--color-background)), 0 0 0 12px rgb(var(--color-blue)),
+    /* using this inset to hide a blue dot caused by the box-shadow with border-radius */
+      inset 0 0 0 100vw rgb(var(--color-background));
   font-size: 1.3rem;
   display: flex;
   flex-direction: column;
