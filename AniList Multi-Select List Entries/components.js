@@ -624,6 +624,7 @@ function createEntryPopupContent(text, cover, current_index, total) {
   content.append(content_image);
   const bar = document.createElement("div");
   bar.style.width = "100%";
+  bar.style.height = "24px";
   bar.style.display = "flex";
   bar.style.justifyContent = "center";
   bar.style.alignItems = "center";
@@ -635,14 +636,10 @@ function createEntryPopupContent(text, cover, current_index, total) {
   content.append(bar);
   const bar_text = document.createElement("span");
   bar_text.innerText = `${current_index} / ${total}`;
-  bar_text.style.textShadow = `2px 0 rgb(var(--color-background)),
-                          -2px 0 rgb(var(--color-background)),
-                          0 2px rgb(var(--color-background)),
-                          0 -2px rgb(var(--color-background)),
-                          1px 1px rgb(var(--color-background)),
-                          -1px -1px rgb(var(--color-background)),
-                          1px -1px rgb(var(--color-background)),
-                          -1px 1px rgb(var(--color-background))`;
+  bar_text.style.boxShadow = `inset 0 0 0 100vw rgb(var(--color-background)),
+                              0 0 0 2px rgb(var(--color-background)),
+                              0 0 3px 3px rgb(var(--color-background))`;
+  bar_text.style.borderRadius = "1px";
   bar.appendChild(bar_text);
   return content;
 }

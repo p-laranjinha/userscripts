@@ -755,7 +755,7 @@ async function setupForm() {
         while (true) {
           ids_response = await getDataFromEntries(media_ids, "id");
           if (ids_response.errors) {
-            const error_message = `${ids_response.ids.length}/${selected_entries.length} IDs were successfully obtained. Please look at the console for more information. Do you want to retry or cancel the request?`;
+            const error_message = `${ids_response.data.length}/${selected_entries.length} IDs were successfully obtained. Please look at the console for more information. Do you want to retry or cancel the request?`;
             if (await createErrorPopup(error_message)) {
               closePopup();
               return false;
@@ -799,7 +799,7 @@ async function setupForm() {
         if (values_to_be_changed.favourite !== undefined) {
           let is_favourite_response;
           while (true) {
-            is_favourite_response = getDataFromEntries(
+            is_favourite_response = await getDataFromEntries(
               media_ids,
               "isFavourite"
             );
@@ -818,8 +818,7 @@ async function setupForm() {
               .querySelector(".title > a")
               .innerText.trim();
             if (
-              values_to_be_changed.favourite !==
-              is_favourite_response.data[i].is_favourite
+              values_to_be_changed.favourite !== is_favourite_response.data[i]
             ) {
               changePopupContent(
                 createEntryPopupContent(
