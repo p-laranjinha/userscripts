@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        AniList Multi-Select List Entries
+// @name        AniList Edit Multiple Media Simultaneously
 // @license     MIT
 // @namespace   rtonne
 // @match       https://anilist.co/*
