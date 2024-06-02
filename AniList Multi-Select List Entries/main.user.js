@@ -18,8 +18,6 @@
 
 // TODO: add scrollbar to dropdown
 // TODO: maybe put all/most inline styling of components in the css file (search .style)
-// TODO: test: add a different amount of entries to 2 custom lists (while having repeats in both) and remove everything
-// TODO: make sure the entry popups have correct text (and check error messages so they match)
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -259,7 +257,9 @@ async function setupForm() {
   help.className = "rtonne-anilist-multiselect-form-help";
   help.innerHTML =
     "ⓘ Because values can be empty, there are 2 ways to enable them. The first one is via an Enable checkbox;" +
-    " the second one is using indeterminate checkboxes, where a dark square and strikethrough text means they're not enabled.";
+    " the second one is using indeterminate checkboxes, where a dark square and strikethrough text means they're not enabled." +
+    "<br>ⓘ Batch updating is done whenever possible. The following cases require individual updates:" +
+    " choosing some but not all advanced scores; choosing one or more custom lists; adding or removing from favourites; deleting.";
   help.style.width = "100%";
   help.style.paddingTop = "20px";
   help.style.fontSize = "smaller";
@@ -699,18 +699,32 @@ async function setupForm() {
       action_list += `<li><u><b>Delete</b></u>.</li>`;
     }
 
-    const selected_entries = document.querySelectorAll(
+    const initial_selected_entries = document.querySelectorAll(
       ".rtonne-anilist-multiselect-selected"
     );
     const confirm_popup_button = createConfirmPopup(
       "Are you sure?",
       `You're about to do the following actions to <b><u>${
-        selected_entries.length
-      } entr${selected_entries.length > 1 ? "ies" : "y"}</u></b>:
+        initial_selected_entries.length
+      } entr${initial_selected_entries.length > 1 ? "ies" : "y"}</u></b>:
       ${action_list}`
     );
 
     confirm_popup_button.onclick = async () => {
+      // It is possible to select the same entry more than once if they're on multiple lists
+      // so we need to remove duplicates
+      let { selected_entries } = Array.from(initial_selected_entries).reduce(
+        (accumulator, currentValue) => {
+          const url = currentValue.querySelector(".title > a").href;
+          if (accumulator.urls.indexOf(url) < 0) {
+            accumulator.urls.push(url);
+            accumulator.selected_entries.push(currentValue);
+          }
+          return accumulator;
+        },
+        { selected_entries: [], urls: [] }
+      );
+
       // Content is in yet another function so I can do stuff after it returns anywhere
       const success = await (async () => {
         let is_cancelled = false;
@@ -746,7 +760,6 @@ async function setupForm() {
           }
         }
         const ids = ids_response.data;
-        let dialog_data = [];
 
         if (values_to_be_changed.delete) {
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
@@ -877,7 +890,7 @@ async function setupForm() {
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             changePopupContent(
               createEntryPopupContent(
-                `Getting custom lists from: <b>${selected_entries[i]
+                `Getting the custom lists of: <b>${selected_entries[i]
                   .querySelector(".title > a")
                   .innerText.trim()}</b>`,
                 selected_entries[i].querySelector(".image").style
@@ -939,7 +952,7 @@ async function setupForm() {
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             changePopupContent(
               createEntryPopupContent(
-                `Getting advanced scores from: <b>${selected_entries[i]
+                `Getting the advanced scores of: <b>${selected_entries[i]
                   .querySelector(".title > a")
                   .innerText.trim()}</b>`,
                 selected_entries[i].querySelector(".image").style
