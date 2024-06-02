@@ -9,12 +9,19 @@
 // @description Adds the ability to select multiple manga/anime in your lists and act on them simultaneously
 // @grant       GM.getResourceText
 // @grant       GM.addStyle
+// @require     https://raw.githubusercontent.com/p-laranjinha/userscripts/master/AniList%20Edit%20Multiple%20Media%20Simultaneously/components.js
+// @require     https://raw.githubusercontent.com/p-laranjinha/userscripts/master/AniList%20Edit%20Multiple%20Media%20Simultaneously/helpers.js
+// @resource    GLOBAL_CSS https://raw.githubusercontent.com/p-laranjinha/userscripts/master/AniList%20Edit%20Multiple%20Media%20Simultaneously/global.css
+// @resource    PLUS_SVG https://raw.githubusercontent.com/p-laranjinha/userscripts/master/AniList%20Edit%20Multiple%20Media%20Simultaneously/plus.svg
+// @resource    MINUS_SVG https://raw.githubusercontent.com/p-laranjinha/userscripts/master/AniList%20Edit%20Multiple%20Media%20Simultaneously/minus.svg
+// ==/UserScript==
+
+// REPLACE THE @require AND @resource WITH THE FOLLOWING DURING DEVELOPMENT
 // @require     components.js
 // @require     helpers.js
 // @resource    GLOBAL_CSS global.css
 // @resource    PLUS_SVG plus.svg
 // @resource    MINUS_SVG minus.svg
-// ==/UserScript==
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
