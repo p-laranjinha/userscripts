@@ -604,7 +604,7 @@ function createEntryPopupContent(text, cover, current_index, total) {
   const content = document.createElement("div");
   content.style.display = "flex";
   content.style.flexWrap = "wrap";
-  content.style.flexDirection = "row";
+  content.style.flexDirection = "column";
   content.style.gap = "10px";
   content.style.justifyContent = "center";
   content.style.alignItems = "center";

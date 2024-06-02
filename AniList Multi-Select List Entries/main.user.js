@@ -74,19 +74,27 @@ async function setupButtons() {
 
   current_url = new_url;
 
+  let isCard = false;
+  if (entries.length > 0 && entries[0].classList.contains("entry-card")) {
+    isCard = true;
+  }
   entries.forEach((entry) => {
     const cover = entry.querySelector(".cover");
 
     // We return if the item already has a select button so
     // there isn't an infinite loop where adding a button triggers
     // the observer which adds more buttons
-    if (cover.querySelector(".rtonne-anilist-multiselect-addbutton")) return;
+    if (entry.querySelector(".rtonne-anilist-multiselect-addbutton")) return;
 
     const add_button = document.createElement("div");
     add_button.className = "rtonne-anilist-multiselect-addbutton edit";
     add_button.innerHTML = PLUS_SVG;
-    cover.querySelector(".edit").after(add_button);
-
+    // I'm appending the buttons to the cards in a different place so I can have them above long titles
+    if (isCard) {
+      entry.append(add_button);
+    } else {
+      cover.querySelector(".edit").after(add_button);
+    }
     const remove_button = document.createElement("div");
     remove_button.className = "rtonne-anilist-multiselect-removebutton edit";
     remove_button.innerHTML = MINUS_SVG;

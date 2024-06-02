@@ -6,6 +6,7 @@
 }
 .entry-card .rtonne-anilist-multiselect-addbutton,
 .entry-card .rtonne-anilist-multiselect-removebutton {
+  z-index: 3;
   top: 42px !important;
 }
 .entry-card.rtonne-anilist-multiselect-selected {
