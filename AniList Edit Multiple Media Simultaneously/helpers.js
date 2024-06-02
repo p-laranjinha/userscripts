@@ -2,6 +2,7 @@
 // @name        AniList Edit Multiple Media Simultaneously (helpers library)
 // @license     MIT
 // @namespace   rtonne
+// @match       https://anilist.co/*
 // @version     1.0
 // @author      Rtonne
 // @description Library for a script
