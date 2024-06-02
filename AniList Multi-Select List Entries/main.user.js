@@ -17,9 +17,9 @@
 // ==/UserScript==
 
 // TODO: add scrollbar to dropdown
-// TODO: make advanced scores work
 // TODO: maybe put all/most inline styling of components in the css file (search .style)
 // TODO: test: add a different amount of entries to 2 custom lists (while having repeats in both) and remove everything
+// TODO: make sure the entry popups have correct text (and check error messages so they match)
 
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
@@ -56,7 +56,7 @@ const observer = new MutationObserver(async () => {
     setupButtons();
     setupForm();
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
 });
 observer.observe(document.body, {
@@ -113,20 +113,25 @@ async function setupForm() {
   const is_list_anime = document
     .querySelector(".nav.container > a[href$='animelist']")
     .classList.contains("router-link-active");
-  let previous_forms = document.querySelectorAll(
+  const previous_forms = document.querySelectorAll(
     ".rtonne-anilist-multiselect-form"
+  );
+  const previous_helps = document.querySelectorAll(
+    ".rtonne-anilist-multiselect-form-help"
   );
   if (previous_forms.length > 0) {
     // In case we end up with multiple forms because of asynchronicity, remove the extra ones
     if (previous_forms.length > 1) {
       for (let i = 0; i < previous_forms.length - 1; i++) {
         previous_forms[i].remove();
+        previous_helps[i].remove();
       }
     }
     // If we change from anime to manga or vice versa, redo the form
     if (WAS_LAST_LIST_ANIME !== is_list_anime) {
-      for (const form of previous_forms) {
-        form.remove();
+      for (let i = 0; i < previous_forms.length; i++) {
+        previous_forms[i].remove();
+        previous_helps[i].remove();
       }
     } else {
       return;
@@ -134,7 +139,7 @@ async function setupForm() {
   }
   WAS_LAST_LIST_ANIME = is_list_anime;
 
-  // Get data required for the form
+  // Choose what status and score to use in the form
   let status_options = [
     "Reading",
     "Plan to read",
@@ -173,20 +178,19 @@ async function setupForm() {
     score_max = 3;
   }
 
+  // Create the form container
   let previous_form = document.querySelector(
     ".rtonne-anilist-multiselect-form"
   );
   if (previous_form) {
     return;
   }
-  // Create the form
   const form = document.createElement("div");
   form.className = "rtonne-anilist-multiselect-form";
   form.style.display = "none";
   container.append(form);
 
-  // We get custom_lists after creating the form so we can do it only once
-
+  // We get custom_lists and advanced_scores after creating the form so we can do it only once
   let custom_lists = [];
   while (true) {
     const first_media_id = Number(
@@ -194,7 +198,6 @@ async function setupForm() {
         .querySelector(".entry .title > a, .entry-card .title > a")
         .href.split("/")[4]
     );
-    // move this below the form creation
     const custom_lists_response = await getDataFromEntries(
       [first_media_id],
       "customLists"
@@ -212,7 +215,46 @@ async function setupForm() {
       break;
     }
   }
+  let advanced_scores = [];
+  while (true) {
+    const first_media_id = Number(
+      document
+        .querySelector(".entry .title > a, .entry-card .title > a")
+        .href.split("/")[4]
+    );
+    const is_advanced_scores_enabled = await isAdvancedScoringEnabled();
+    if (is_advanced_scores_enabled.errors) {
+      const error_message = `An error occurred while getting if advanced scores are enabled. Please look at the console for more information. Do you want to retry or cancel the request?`;
+      if (await createErrorPopup(error_message)) {
+        document.body.className += " rtonne-anilist-multiselect-form-failed";
+        return;
+      }
+    } else if (
+      (is_list_anime && is_advanced_scores_enabled.data.anime) ||
+      (!is_list_anime && is_advanced_scores_enabled.data.manga)
+    ) {
+      const advanced_scores_response = await getDataFromEntries(
+        [first_media_id],
+        "advancedScores"
+      );
+      if (advanced_scores_response.errors) {
+        const error_message = `An error occurred while getting the available advanced scores. Please look at the console for more information. Do you want to retry or cancel the request?`;
+        if (await createErrorPopup(error_message)) {
+          document.body.className += " rtonne-anilist-multiselect-form-failed";
+          return;
+        }
+      } else {
+        advanced_scores = advanced_scores_response.data[0]
+          ? Object.keys(advanced_scores_response.data[0])
+          : [];
+        break;
+      }
+    } else {
+      break;
+    }
+  }
 
+  // Create the form contents
   const help = document.createElement("div");
   help.className = "rtonne-anilist-multiselect-form-help";
   help.innerHTML =
@@ -244,6 +286,29 @@ async function setupForm() {
   score_container.append(score_label);
   const score_enabled_checkbox = createCheckbox(score_container, "Enabled");
   const score_input = createNumberInput(score_container, score_max, score_step);
+
+  /** @type {HTMLInputElement[]} */
+  let advanced_scores_enabled_checkboxes = [];
+  /** @type {HTMLInputElement[]} */
+  let advanced_scores_inputs = [];
+  if (advanced_scores.length > 0) {
+    for (const advanced_score of advanced_scores) {
+      const advanced_score_container = document.createElement("div");
+      advanced_score_container.className =
+        "rtonne-anilist-multiselect-has-enabled-checkbox";
+      form.append(advanced_score_container);
+      const advanced_score_label = document.createElement("label");
+      advanced_score_label.innerHTML = `${advanced_score} <small>(Advanced Score)</small>`;
+      advanced_score_label.style.wordBreak = "break-all";
+      advanced_score_container.append(advanced_score_label);
+      advanced_scores_enabled_checkboxes.push(
+        createCheckbox(advanced_score_container, "Enabled")
+      );
+      advanced_scores_inputs.push(
+        createNumberInput(advanced_score_container, 100, 0)
+      );
+    }
+  }
 
   /**
    * Collection of progress inputs.
@@ -379,7 +444,7 @@ async function setupForm() {
   /** @type {HTMLInputElement|null} */
   let hide_from_status_list_checkbox;
   /** @type {HTMLInputElement[]} */
-  const custom_lists_checkboxes = [];
+  let custom_lists_checkboxes = [];
   if (custom_lists.length > 0) {
     const custom_lists_container = document.createElement("div");
     custom_lists_container.id = "rtonne-anilist-multiselect-custom-lists-input";
@@ -429,6 +494,8 @@ async function setupForm() {
     if (
       delete_checkbox.checked ||
       status_enabled_checkbox.checked ||
+      (advanced_scores.length > 0 &&
+        advanced_scores_enabled_checkboxes.some((e) => e.checked)) ||
       score_enabled_checkbox.checked ||
       (is_list_anime &&
         (progress_inputs.episode_enabled_checkbox.checked ||
@@ -502,6 +569,21 @@ async function setupForm() {
       if (score_enabled_checkbox.checked) {
         action_list += `<li>Set <u>Score</u> to <b>${score_input.value}</b>.</li>`;
         values_to_be_changed.score = Number(score_input.value);
+      }
+      if (advanced_scores.length > 0) {
+        // Create array with advanced_scores.length count of null
+        values_to_be_changed.advancedScores = Array.from(
+          { length: advanced_scores.length },
+          () => null
+        );
+        for (let i = 0; i < advanced_scores.length; i++) {
+          if (advanced_scores_enabled_checkboxes[i].checked) {
+            action_list += `<li>Set the <u>${advanced_scores[i]}</u> <u>Advanced Score</u> to <b>${advanced_scores_inputs[i].value}</b>.</li>`;
+            values_to_be_changed.advancedScores[i] = Number(
+              advanced_scores_inputs[i].value
+            );
+          }
+        }
       }
       if (is_list_anime) {
         if (progress_inputs.episode_enabled_checkbox.checked) {
@@ -764,50 +846,16 @@ async function setupForm() {
         }
 
         // Adding/removing from custom lists requires more meddling.
-        // If all custom lists have been decided no further processing is required.
-        // array.every() return true if array is empty so we need to check that
+        // If some but not all custom lists have been chosen further processing is required.
+        // array.every() returns true if array is empty so we need to check that.
+        /** @type {void | string[][]} */
+        let all_processed_custom_lists;
         if (
-          custom_lists_checkboxes.length > 0 &&
-          custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
-        ) {
-          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
-            changePopupContent(
-              createEntryPopupContent(
-                `Updating: <b>${selected_entries[i]
-                  .querySelector(".title > a")
-                  .innerText.trim()}</b>`,
-                selected_entries[i].querySelector(".image").style
-                  .backgroundImage,
-                i + 1,
-                selected_entries.length
-              )
-            );
-            while (true) {
-              const update_response = await updateEntry(
-                ids[i],
-                values_to_be_changed
-              );
-              if (update_response.errors) {
-                const entry_title = selected_entries[i]
-                  .querySelector(".title > a")
-                  .innerText.trim();
-                const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
-                if (await createErrorPopup(error_message)) {
-                  closePopup();
-                  return false;
-                }
-              } else {
-                break;
-              }
-            }
-          }
-          closePopup();
-          return true;
-        }
-        // If only some custom lists have been decided,
-        // we need to make sure we don't remove the entries from their current custom lists
-        if (
-          custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate)
+          custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate) &&
+          !(
+            custom_lists_checkboxes.length > 0 &&
+            custom_lists_checkboxes.every((checkbox) => !checkbox.indeterminate)
+          )
         ) {
           let custom_lists_response;
           while (true) {
@@ -816,7 +864,7 @@ async function setupForm() {
               "customLists"
             );
             if (custom_lists_response.errors) {
-              const error_message = `An error occurred while getting info to update the custom lists. Please look at the console for more information. Do you want to retry or cancel the request?`;
+              const error_message = `An error occurred while getting custom lists. Please look at the console for more information. Do you want to retry or cancel the request?`;
               if (await createErrorPopup(error_message)) {
                 closePopup();
                 return false;
@@ -825,11 +873,105 @@ async function setupForm() {
               break;
             }
           }
+          all_processed_custom_lists = [];
           for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
-            const entry_title = selected_entries[i]
-              .querySelector(".title > a")
-              .innerText.trim();
+            changePopupContent(
+              createEntryPopupContent(
+                `Getting custom lists from: <b>${selected_entries[i]
+                  .querySelector(".title > a")
+                  .innerText.trim()}</b>`,
+                selected_entries[i].querySelector(".image").style
+                  .backgroundImage,
+                i + 1,
+                selected_entries.length
+              )
+            );
+            let processed_custom_lists = [];
+            let entry_custom_lists = custom_lists_response.data[i];
+            for (let j = 0; j < custom_lists.length; j++) {
+              if (!custom_lists_checkboxes[j].indeterminate) {
+                if (custom_lists_checkboxes[j].checked) {
+                  processed_custom_lists.push(custom_lists[j]);
+                }
+              } else {
+                if (entry_custom_lists[custom_lists[j]]) {
+                  processed_custom_lists.push(custom_lists[j]);
+                }
+              }
+            }
+            all_processed_custom_lists.push(processed_custom_lists);
+          }
+        }
 
+        // Using advanced scores requires more meddling.
+        // If some but not all advanced scores have been chosen further processing is required.
+        // array.every() returns true if array is empty so we need to check that.
+        /** @type {void | string[][]} */
+        let all_processed_advanced_scores;
+        const some_but_not_all_advanced_scores =
+          advanced_scores_enabled_checkboxes.some(
+            (checkbox) => checkbox.checked
+          ) &&
+          !(
+            advanced_scores_enabled_checkboxes.length > 0 &&
+            advanced_scores_enabled_checkboxes.every(
+              (checkbox) => checkbox.checked
+            )
+          );
+        if (some_but_not_all_advanced_scores) {
+          let advanced_scores_response;
+          while (true) {
+            advanced_scores_response = await getDataFromEntries(
+              media_ids,
+              "advancedScores"
+            );
+            if (advanced_scores_response.errors) {
+              const error_message = `An error occurred while getting advanced scores. Please look at the console for more information. Do you want to retry or cancel the request?`;
+              if (await createErrorPopup(error_message)) {
+                closePopup();
+                return false;
+              }
+            } else {
+              break;
+            }
+          }
+          all_processed_advanced_scores = [];
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
+            changePopupContent(
+              createEntryPopupContent(
+                `Getting advanced scores from: <b>${selected_entries[i]
+                  .querySelector(".title > a")
+                  .innerText.trim()}</b>`,
+                selected_entries[i].querySelector(".image").style
+                  .backgroundImage,
+                i + 1,
+                selected_entries.length
+              )
+            );
+            let processed_advanced_scores = [];
+            let entry_advanced_scores = Object.values(
+              advanced_scores_response.data[i]
+            );
+            for (let j = 0; j < advanced_scores.length; j++) {
+              if (advanced_scores_enabled_checkboxes[j].checked) {
+                processed_advanced_scores.push(
+                  values_to_be_changed.advancedScores[j]
+                );
+              } else {
+                processed_advanced_scores.push(entry_advanced_scores[j]);
+              }
+            }
+            all_processed_advanced_scores.push(processed_advanced_scores);
+          }
+        }
+
+        // If any custom lists or some but not all advanced scores have been chosen, we require individual updates.
+        if (
+          custom_lists_checkboxes.some((checkbox) => !checkbox.indeterminate) ||
+          some_but_not_all_advanced_scores
+        ) {
+          const values = { ...values_to_be_changed };
+          for (let i = 0; i < selected_entries.length && !is_cancelled; i++) {
             changePopupContent(
               createEntryPopupContent(
                 `Updating: <b>${selected_entries[i]
@@ -841,25 +983,18 @@ async function setupForm() {
                 selected_entries.length
               )
             );
-            let final_custom_lists = [];
-            let entry_custom_lists = custom_lists_response.data[i];
-            for (let j = 0; j < custom_lists.length; j++) {
-              if (!custom_lists_checkboxes[j].indeterminate) {
-                if (custom_lists_checkboxes[j].checked) {
-                  final_custom_lists.push(custom_lists[j]);
-                }
-              } else {
-                if (entry_custom_lists[custom_lists[j]]) {
-                  final_custom_lists.push(custom_lists[j]);
-                }
-              }
-            }
             while (true) {
-              const update_response = await updateEntry(ids[i], {
-                ...values_to_be_changed,
-                customLists: final_custom_lists,
-              });
+              if (all_processed_custom_lists) {
+                values.customLists = all_processed_custom_lists[i];
+              }
+              if (all_processed_advanced_scores) {
+                values.advancedScores = all_processed_advanced_scores[i];
+              }
+              const update_response = await updateEntry(ids[i], values);
               if (update_response.errors) {
+                const entry_title = selected_entries[i]
+                  .querySelector(".title > a")
+                  .innerText.trim();
                 const error_message = `An error occurred while updating <b>${entry_title}</b>. Please look at the console for more information. Do you want to retry or cancel the request?`;
                 if (await createErrorPopup(error_message)) {
                   closePopup();
@@ -878,6 +1013,8 @@ async function setupForm() {
         if (
           status_enabled_checkbox.checked ||
           score_enabled_checkbox.checked ||
+          (advanced_scores.length > 0 &&
+            advanced_scores_enabled_checkboxes.every((e) => e.checked)) ||
           (is_list_anime &&
             (progress_inputs.episode_enabled_checkbox.checked ||
               progress_inputs.rewatches_enabled_checkbox.checked)) ||

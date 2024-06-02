@@ -143,11 +143,11 @@ function createSelectInput(container, options) {
 }
 
 /**
- * Creates a number input.
+ * Creates a number input. Step can be 0 to have step=1 and to not limit values to steppable ones.
+ * @returns The number input element.
  * @param {HTMLElement} container A parent element to append the input to.
  * @param {number} max_value The maximum value the input can reach.
  * @param {number} step The step value of the input.
- * @returns The number input element.
  */
 function createNumberInput(container, max_value = Infinity, step = 1) {
   const input_container_1 = document.createElement("div");
@@ -205,7 +205,8 @@ function createNumberInput(container, max_value = Infinity, step = 1) {
   const input_min = Number(input.min);
   function makeValueValid() {
     // https://stackoverflow.com/questions/17369098/simplest-way-of-getting-the-number-of-decimals-in-a-number-in-javascript
-    if (Math.floor(Number(input.value)) !== Number(input.value)) {
+    // Step 0 is a special case that should ignore step validation
+    if (step !== 0 && Math.floor(Number(input.value)) !== Number(input.value)) {
       let decimalCount;
       if (input.value.indexOf(".") !== -1 && input.value.indexOf("-") !== -1) {
         decimalCount =

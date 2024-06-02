@@ -31,10 +31,45 @@ function waitForElements(selector) {
 }
 
 /**
+ * Returns if anime or manga has advanced scoring enabled.
+ * @returns {Promise<{data: {anime: boolean, manga: boolean}} | {data: {}, errors: FetchError[]}>}
+ */
+async function isAdvancedScoringEnabled() {
+  const query = `
+    query {
+      User(name: "${window.location.href.split("/")[4]}") {
+        mediaListOptions {
+          animeList {
+            advancedScoringEnabled
+          }
+          mangaList {
+            advancedScoringEnabled
+          }
+        }
+      }
+    }
+  `;
+
+  const { data, errors } = await anilistFetch(
+    JSON.stringify({ query: query, variables: {} })
+  );
+  if (errors) {
+    return { data: {}, errors };
+  }
+  const return_data = {
+    anime:
+      data["User"]["mediaListOptions"]["animeList"]["advancedScoringEnabled"],
+    manga:
+      data["User"]["mediaListOptions"]["mangaList"]["advancedScoringEnabled"],
+  };
+  return { data: return_data };
+}
+
+/**
  * Get data from a group of entries.
  * @param {int[]} media_ids
  * @param {"id"|"isFavourite"|"customLists"|"advancedScores"} field
- * @returns {Promise<{data: any[]} | {data: data[], errors: FetchError[]}>}
+ * @returns {Promise<{data: any[]} | {data: any[], errors: FetchError[]}>}
  */
 async function getDataFromEntries(media_ids, field) {
   const query = `query ($media_ids: [Int], $page: Int, $per_page: Int) {
@@ -77,9 +112,9 @@ async function getDataFromEntries(media_ids, field) {
     );
   }
   if (errors) {
-    return { data };
+    return { data, errors };
   }
-  return { data, errors };
+  return { data };
 }
 
 /**
