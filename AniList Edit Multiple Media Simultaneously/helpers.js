@@ -1,3 +1,12 @@
+// ==UserScript==
+// @name        AniList Edit Multiple Media Simultaneously (helpers library)
+// @license     MIT
+// @namespace   rtonne
+// @version     1.0
+// @author      Rtonne
+// @description Library for a script
+// ==/UserScript==
+
 /**
  * @typedef {{message: string, status: number, locations: {line: number, column: number}[]}} AniListError
  * @typedef {{message: string} | AniListError} FetchError

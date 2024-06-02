@@ -1,3 +1,12 @@
+// ==UserScript==
+// @name        AniList Edit Multiple Media Simultaneously (components library)
+// @license     MIT
+// @namespace   rtonne
+// @version     1.0
+// @author      Rtonne
+// @description Library for a script
+// ==/UserScript==
+
 /**
  * Creates a select input.
  * @param {HTMLElement} container A parent element to append the input to.
