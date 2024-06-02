@@ -49,8 +49,7 @@ function createSelectInput(container, options) {
   const dropdown_list_container = document.createElement("div");
   dropdown_list_container.className =
     "el-select-dropdown__wrap el-scrollbar__wrap";
-  dropdown_list_container.style.marginBottom = "-14px";
-  dropdown_list_container.style.marginRight = "-14px";
+  dropdown_list_container.style.overflow = "auto";
   dropdown_scrollbar.append(dropdown_list_container);
   const dropdown_list = document.createElement("ul");
   dropdown_list.className = "el-scrollbar__view el-select-dropdown__list";

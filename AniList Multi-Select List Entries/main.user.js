@@ -16,9 +16,6 @@
 // @resource    MINUS_SVG minus.svg
 // ==/UserScript==
 
-// TODO: add scrollbar to dropdown
-// TODO: maybe put all/most inline styling of components in the css file (search .style)
-
 const GLOBAL_CSS = GM.getResourceText("GLOBAL_CSS");
 GM.addStyle(GLOBAL_CSS);
 const PLUS_SVG = GM.getResourceText("PLUS_SVG");
