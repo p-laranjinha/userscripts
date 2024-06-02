@@ -1,11 +1,11 @@
 // ==UserScript==
-// @name        AniList Edit Multiple Media Simultaneously (components library)
+// @name        components
 // @license     MIT
 // @namespace   rtonne
 // @match       https://anilist.co/*
 // @version     1.0
 // @author      Rtonne
-// @description Library for a script
+// @description Components library for AniList Edit Multiple Media Simultaneously
 // ==/UserScript==
 
 /**
