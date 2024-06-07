@@ -4,12 +4,55 @@
 // @namespace   rtonne
 // @match       https://www.youtube.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=youtube.com
-// @grant       none
-// @version     1.5
+// @version     1.6
 // @author      Rtonne
 // @description Adds a button to remove videos from playlists just like on mobile
 // @run-at      document-end
+// @grant       GM.addStyle
 // ==/UserScript==
+
+GM.addStyle(`
+ytd-playlist-video-renderer:hover .rtonne-youtube-playlist-delete-button {
+  width: var(--yt-icon-width);
+}
+.rtonne-youtube-playlist-delete-button {
+  width: 0;
+  background-color: var(--yt-spec-additive-background);
+  fill: var(--yt-spec-text-primary);
+  border-width: 0;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+.rtonne-youtube-playlist-delete-button:hover {
+  background-color: var(--yt-spec-static-brand-red);
+}
+body.rtonne-youtube-playlist-delete-button-in-progress .rtonne-youtube-playlist-delete-button {
+  pointer-events: none;
+}
+body.rtonne-youtube-playlist-delete-button-in-progress .rtonne-youtube-playlist-delete-button > div > svg {
+  display: none !important;
+}
+/* From https://cssloaders.github.io */
+body.rtonne-youtube-playlist-delete-button-in-progress .rtonne-youtube-playlist-delete-button > div {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--yt-spec-text-primary);
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: rotation 2s linear infinite;
+}
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+`);
 
 let currentUrl = null;
 
@@ -67,28 +110,15 @@ const observer = new MutationObserver(async () => {
       button.className = "rtonne-youtube-playlist-delete-button";
       button.innerHTML = getYoutubeTrashSvg();
       button.style.height = elementStyle.height;
-      button.style.padding = "0";
       button.style.borderRadius = `0 ${elementStyle.borderTopRightRadius} ${elementStyle.borderBottomRightRadius} 0`;
-      button.style.borderWidth = "0";
-      button.style.fill = "var(--yt-spec-text-primary)";
-      button.onmouseover = () => {
-        button.style.backgroundColor = "var(--yt-spec-static-brand-red)";
-      };
-      button.onmouseleave = () => {
-        button.style.backgroundColor = "var(--yt-spec-additive-background)";
-      };
-      button.onmouseleave();
 
-      element.onmouseover = () => {
-        button.style.width = "var(--yt-icon-width)";
-      };
-      element.onmouseleave = () => {
-        button.style.width = "0";
-      };
-      element.onmouseleave();
       element.appendChild(button);
 
       button.onclick = async () => {
+        document.body.classList.add(
+          "rtonne-youtube-playlist-delete-button-in-progress"
+        );
+
         // Click the 3 dot menu button on the video
         element.querySelector("button.yt-icon-button").click();
 
@@ -108,6 +138,9 @@ const observer = new MutationObserver(async () => {
 
         // In case of error and the popup doesn't hide
         document.body.click();
+        document.body.classList.remove(
+          "rtonne-youtube-playlist-delete-button-in-progress"
+        );
       };
     });
   } catch (err) {
