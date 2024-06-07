@@ -5,7 +5,7 @@
 // @match       https://www.youtube.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // @grant       none
-// @version     1.4
+// @version     1.5
 // @author      Rtonne
 // @description Adds a button to remove videos from playlists just like on mobile
 // @run-at      document-end
@@ -92,32 +92,26 @@ const observer = new MutationObserver(async () => {
         // Click the 3 dot menu button on the video
         element.querySelector("button.yt-icon-button").click();
 
-        const popup = (
-          await waitForElements(
-            document,
-            "tp-yt-iron-dropdown.ytd-popup-container:has(> div > ytd-menu-popup-renderer)"
-          )
-        )[0];
+        const [popup] = await waitForElements(
+          document,
+          "tp-yt-iron-dropdown.ytd-popup-container:has(> div > ytd-menu-popup-renderer):not([style*='display: none;'])"
+        );
 
-        // Set the popup opacity to 0 to hide it
-        popup.style.opacity = "0";
+        // Set the popup left to -10000px to hide it
+        popup.style.left = "-10000px";
 
-        const removeMenuItem = (
-          await waitForElements(
-            popup,
-            `ytd-menu-service-item-renderer:has(path[d="${getSvgPathD()}"])`
-          )
-        )[0];
+        const [popup_remove_button] = await waitForElements(
+          popup,
+          `ytd-menu-service-item-renderer:has(path[d="${getSvgPathD()}"])`
+        );
+        await removeVideo(popup_remove_button, element);
 
-        // Click the remove video from playlist button in the popup
-        removeMenuItem.click();
-
-        // Set the opacity back to default
-        popup.style.opacity = null;
+        // In case of error and the popup doesn't hide
+        document.body.click();
       };
     });
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
 });
 observer.observe(document.body, {
@@ -158,9 +152,14 @@ function getSvgPathD() {
   return "M11 17H9V8h2v9zm4-9h-2v9h2V8zm4-4v1h-1v16H6V5H5V4h4V3h6v1h4zm-2 1H7v15h10V5z";
 }
 
-// https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
-// This function is required because youtube uses too much JS
-// and elements take a while to appear sometimes
+/**
+ * Uses a MutationObserver to wait until the element we want exists.
+ * This function is required because elements take a while to appear sometimes.
+ * https://stackoverflow.com/questions/5525071/how-to-wait-until-an-element-exists
+ * @param {HTMLElement} node The element being used for querySelector
+ * @param {string} selector A string for node.querySelector describing the elements we want.
+ * @returns {Promise<HTMLElement[]>} The list of elements found.
+ */
 function waitForElements(node, selector) {
   return new Promise((resolve) => {
     if (node.querySelector(selector)) {
@@ -177,6 +176,35 @@ function waitForElements(node, selector) {
     observer.observe(document.body, {
       childList: true,
       subtree: true,
+      attributeFilter: ["style"], // This needs to be used because in this case the selector can depend on style
     });
+  });
+}
+/**
+ * Removes the video that the popup belongs to.
+ * Will try multiple times because of errors like "Precondition check failed".
+ * @param {HTMLElement} popup_remove_button The popup button that remove the video.
+ * @param {HTMLElement} element The element that represents the video being removed.
+ * @returns
+ */
+function removeVideo(popup_remove_button, element) {
+  return new Promise((resolve) => {
+    // Observer should trigger either when the element is removed
+    // or an error notification appears
+    const observer = new MutationObserver(() => {
+      if (!document.contains(element)) {
+        observer.disconnect();
+        // disconnect and resolve don't immediately stop execution so return is also required
+        return resolve();
+      }
+      popup_remove_button.click();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    popup_remove_button.click();
   });
 }
