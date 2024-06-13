@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.patreon.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=patreon.com
-// @version     1.1
+// @version     1.2
 // @author      Rtonne
 // @description Adds a button to turn patreon streamable posts into custom text on your clipboard
 // @run-at      document-end
