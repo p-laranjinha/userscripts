@@ -48,17 +48,17 @@ const observer = new MutationObserver(async () => {
     if (!post_video_figure) {
       continue;
     }
-    const post_buttons_container = element.querySelector(
-      "div[data-tag='post-details'] > div > div"
+    const more_actions_button = element.querySelector(
+      "button[data-tag='more-actions-button']"
     );
 
     const clipboard_button = document.createElement("button");
-    clipboard_button.className = post_buttons_container.children[0].className;
+    clipboard_button.className = more_actions_button.className;
     clipboard_button.classList.add("rtonne-patreon-streamable-button");
-    post_buttons_container.append(clipboard_button);
+    more_actions_button.before(clipboard_button);
     const clipboard_button_svg_container = document.createElement("div");
     clipboard_button_svg_container.className =
-      post_buttons_container.children[0].children[0].className;
+      more_actions_button.children[0].className;
     clipboard_button_svg_container.innerHTML = clipboard_svg;
     clipboard_button.append(clipboard_button_svg_container);
 
