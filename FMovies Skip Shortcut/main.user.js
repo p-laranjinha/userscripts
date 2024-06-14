@@ -11,12 +11,56 @@
 // @grant       GM.setValue
 // @grant       GM.getValue
 // @grant       GM.addValueChangeListener
+// @grant       GM.registerMenuCommand
 // ==/UserScript==
 
 // Movies are probably not be needed, but there might an exception so I'll include them
 const URL_REGEX = /^https:\/\/fmovies24.to\/((tv)|(movie))\/.+$/;
 const IS_FMOVIES_VALUE_KEY = "is_FMovies";
 const NEXT_EPISODE_VALUE_KEY = "next_episode";
+const KEY_CODE_VALUE_KEY = "key_code";
+const DEFAULT_KEY_CODE = "KeyN";
+
+let pauseKeydownListener = false;
+
+GM.registerMenuCommand("Set new shortcut key", () => {
+  pauseKeydownListener = true;
+  const modal = document.createElement("div");
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.width = "100vw";
+  modal.style.height = "100vh";
+  modal.style.backgroundColor = "rgba(0,0,0,0.8)";
+  modal.style.display = "flex";
+  modal.style.justifyContent = "center";
+  modal.style.alignItems = "center";
+  document.body.append(modal);
+  const modal_content = document.createElement("div");
+  modal_content.style.padding = "8px";
+  modal_content.style.borderRadius = "3px";
+  modal_content.style.backgroundColor = "dimgrey";
+  modal_content.style.color = "white";
+  modal_content.innerText =
+    "Click the window and press the key for the new shortcut.";
+  modal.append(modal_content);
+
+  function listenerFunction(event) {
+    // Escape doesn't work
+    if (event.code === "Escape") {
+      return;
+    }
+    modal.remove();
+    GM.setValue(KEY_CODE_VALUE_KEY, event.code);
+    pauseKeydownListener = false;
+    document.removeEventListener("keydown", listenerFunction);
+  }
+
+  document.addEventListener("keydown", listenerFunction);
+});
+
+GM.registerMenuCommand("Reset shortcut key", () => {
+  GM.setValue(KEY_CODE_VALUE_KEY, DEFAULT_KEY_CODE);
+});
 
 if (window.top === window.self) {
   // Run this with regular websites
@@ -56,8 +100,8 @@ function topWebsite() {
   });
 }
 
-function iFrame() {
-  let isFMovies = GM.getValue(IS_FMOVIES_VALUE_KEY, false);
+async function iFrame() {
+  let isFMovies = await GM.getValue(IS_FMOVIES_VALUE_KEY, false);
   // This commented code section shouldn't be required because iframes are loaded by the user.
   // And if it wasn't commented, there was the risk of another window's iframes having this event listener added.
   // if (!isFMovies) {
@@ -73,10 +117,12 @@ function iFrame() {
 }
 
 function addKeydown() {
-  document.addEventListener("keydown", (event) => {
+  document.addEventListener("keydown", async (event) => {
     // If the correct key is pressed and an input is not focused, continue
     if (
-      event.code !== "Minus" ||
+      pauseKeydownListener ||
+      event.code !==
+        (await GM.getValue(KEY_CODE_VALUE_KEY, DEFAULT_KEY_CODE)) ||
       event.target.nodeName.toLowerCase() === "input" ||
       // Discus inputs require special treatment
       (event.target.attributes.role &&
