@@ -6,5 +6,5 @@ By default the shortcut is "n" but you can change it by clicking the option in y
 
 ---
 
-![Image of the options in the userscript manager](https://raw.githubusercontent.com/p-laranjinha/userscripts/master/FMovies%20Skip%20Shortcut/images/options.png)
-![Image of the modal to change the shortcut](https://raw.githubusercontent.com/p-laranjinha/userscripts/master/FMovies%20Skip%20Shortcut/images/modal.png)
+![Image of the options in the userscript manager](https://raw.githubusercontent.com/p-laranjinha/userscripts/master/FMovies%20Next%20Episode%20Shortcut/images/options.png)
+![Image of the modal to change the shortcut](https://raw.githubusercontent.com/p-laranjinha/userscripts/master/FMovies%20Next%20Episode%20Shortcut/images/modal.png)
