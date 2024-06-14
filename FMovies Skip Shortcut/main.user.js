@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://*/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=fmovies24.to
-// @version     1.2
+// @version     2.0
 // @author      Rtonne
 // @description Adds a shortcut ("-") to skip to the next episode
 // @run-at      document-end
