@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://*/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=fmovies24.to
-// @version     2.0
+// @version     2.1
 // @author      Rtonne
 // @description Adds a shortcut to go to the next episode
 // @run-at      document-end
@@ -34,6 +34,7 @@ GM.registerMenuCommand("Set new shortcut key", () => {
   modal.style.display = "flex";
   modal.style.justifyContent = "center";
   modal.style.alignItems = "center";
+  modal.style.zIndex = "1000000";
   document.body.append(modal);
   const modal_content = document.createElement("div");
   modal_content.style.padding = "8px";
