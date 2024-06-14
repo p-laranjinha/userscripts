@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://*/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=fmovies24.to
-// @version     1.1
+// @version     1.2
 // @author      Rtonne
 // @description Adds a shortcut ("-") to skip to the next episode
 // @run-at      document-end
@@ -75,7 +75,13 @@ function iFrame() {
 function addKeydown() {
   document.addEventListener("keydown", (event) => {
     // If the correct key is pressed and an input is not focused, continue
-    if (event.key !== "-" || event.target.nodeName.toLowerCase() === "input") {
+    if (
+      event.code !== "Minus" ||
+      event.target.nodeName.toLowerCase() === "input" ||
+      // Discus inputs require special treatment
+      (event.target.attributes.role &&
+        event.target.attributes.role.value === "textbox")
+    ) {
       return;
     }
     GM.setValue(NEXT_EPISODE_VALUE_KEY, true);
