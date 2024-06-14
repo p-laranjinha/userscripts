@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name        FMovies Skip Shortcut
+// @name        FMovies Next Episode Shortcut
 // @license     MIT
 // @namespace   rtonne
 // @match       https://*/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=fmovies24.to
 // @version     2.0
 // @author      Rtonne
-// @description Adds a shortcut ("-") to skip to the next episode
+// @description Adds a shortcut to go to the next episode
 // @run-at      document-end
 // @grant       GM.setValue
 // @grant       GM.getValue
