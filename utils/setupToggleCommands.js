@@ -47,7 +47,10 @@ GM.unregisterMenuCommand("test");
  * @param {_Command} command The command being toggled.
  */
 async function _toggleCommand(command_list, command) {
-  await GM.setValue(command.id, !(await GM.getValue(command.id, false)));
+  await GM.setValue(
+    command.id,
+    !(await GM.getValue(command.id, command.default))
+  );
   _runCommandFunction(command);
   if (_can_replace_in_place) {
     await _registerCommand(command_list, command);
@@ -69,7 +72,7 @@ async function _toggleCommand(command_list, command) {
  */
 async function _registerCommand(command_list, command) {
   let text = command.on_text;
-  if (!(await GM.getValue(command.id, false))) {
+  if (!(await GM.getValue(command.id, command.default))) {
     text = command.off_text;
   }
 
@@ -84,7 +87,7 @@ async function _registerCommand(command_list, command) {
  * @param {_Command} command
  */
 async function _runCommandFunction(command) {
-  if (await GM.getValue(command.id, false)) {
+  if (await GM.getValue(command.id, command.default)) {
     command.toggleOnFunction();
   } else {
     command.toggleOffFunction();
