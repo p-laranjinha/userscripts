@@ -5,7 +5,7 @@
 // @match       https://www.royalroad.com/fiction/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
 // @grant       none
-// @version     4.8
+// @version     5
 // @author      Rtonne
 // @description Adds buttons to download to Royal Road chapters
 // @require     https://cdn.jsdelivr.net/npm/jszip@3.10.1
@@ -13,214 +13,432 @@
 // @run-at      document-end
 // ==/UserScript==
 
-(async () => {
-  try {
-    const chapterRegex = new RegExp(
-      /https:\/\/www.royalroad.com\/fiction\/.*?\/chapter\/.*/g
-    );
+const FICTION_REGEX = new RegExp(
+  /^https:\/\/www.royalroad.com\/fiction\/\d+?\/[^\/]+$/
+);
+const CHAPTER_REGEX = new RegExp(
+  /^https:\/\/www.royalroad.com\/fiction\/\d+?\/[^\/]+\/chapter\/\d+?\/[^\/]+$/
+);
+const PARSER = new DOMParser();
 
-    if (chapterRegex.test(window.location.href)) {
-      // If URL is of a chapter
-      chapterPageDownload();
-    } else {
-      // If URL is of a fiction
-      fictionPageDownload();
-    }
-  } catch (err) {
-    console.log(err);
+if (FICTION_REGEX.test(window.location.href)) {
+  // If current page is a fiction page
+  setupFictionPageDownload();
+}
+if (CHAPTER_REGEX.test(window.location.href)) {
+  // If current page is a chapter page
+  setupChapterPageDownload();
+}
+
+async function setupFictionPageDownload() {
+  const chapter_metadata_list = await fetchChapterMetadataList();
+
+  if (!chapter_metadata_list.length) {
+    return;
   }
-})();
 
-async function chapterPageDownload() {
-  // Fetch full chapter list to know how many chapters there are and the index of this one
-  // So we know what the file name will be
-  const chapters = await fetchChapterList(
-    window.location.href.match(
-      /https:\/\/www.royalroad.com\/fiction\/.*?(?=\/chapter\/.*)/g
-    )[0]
+  const royalroad_button_computed_style = getComputedStyle(
+    document.querySelector("a.button-icon-large")
   );
 
-  //=====
-  // Create the download buttons
-  //=====
+  // The page has multiple sets of buttons for different widths
+  const royalroad_3_button_rows = document.querySelectorAll(
+    "div.row.reduced-gutter"
+  );
 
+  for (const button_row of royalroad_3_button_rows) {
+    const container = document.createElement("div");
+    container.style.marginBottom = "10px";
+    button_row.after(container);
+
+    const button = document.createElement("a");
+    button.className =
+      "button-icon-large rtonne-royalroad-download-button-fiction-button";
+    button.style.marginBottom = "0";
+    container.append(button);
+
+    const progress_bar = document.createElement("div");
+    progress_bar.style.position = "absolute";
+    progress_bar.style.top = `calc(${royalroad_button_computed_style.height} - ${royalroad_button_computed_style.borderBottomWidth})`;
+    progress_bar.style.left = "0";
+    progress_bar.style.height =
+      royalroad_button_computed_style.borderBottomWidth;
+    progress_bar.style.background = getComputedStyle(
+      document.querySelector("a.btn-primary")
+    ).backgroundColor;
+    progress_bar.style.width = "0";
+    progress_bar.className = "rtonne-royalroad-download-button-progress-bar";
+    button.append(progress_bar);
+
+    const button_icon = document.createElement("i");
+    button_icon.className = "fa fa-download";
+    button.append(button_icon);
+
+    const button_text = document.createElement("span");
+    button_text.innerText = "Download Chapters";
+    button_text.className = "center";
+    button.append(button_text);
+
+    const form = document.createElement("div");
+    form.className = "icon-container";
+    form.style.padding = "5px";
+    form.style.marginLeft = "5px";
+    form.style.marginRight = "5px";
+    container.append(form);
+
+    const start_select_label = document.createElement("span");
+    start_select_label.innerText = "From:";
+    start_select_label.className = "tip";
+    start_select_label.style.position = "unset";
+    form.append(start_select_label);
+
+    const start_select = document.createElement("select");
+    start_select.className =
+      "form-control rtonne-royalroad-download-button-start-select";
+    start_select.style.marginBottom = "5px";
+    form.append(start_select);
+
+    const end_select_label = document.createElement("span");
+    end_select_label.innerText = "To:";
+    end_select_label.className = "tip";
+    end_select_label.style.position = "unset";
+    form.append(end_select_label);
+
+    const end_select = document.createElement("select");
+    end_select.className =
+      "form-control rtonne-royalroad-download-button-end-select";
+    form.append(end_select);
+
+    for (const [index, chapter_metadata] of chapter_metadata_list.entries()) {
+      const option = document.createElement("option");
+      option.value = index;
+      option.innerText = chapter_metadata.title;
+      start_select.append(option);
+      end_select.append(option.cloneNode(true));
+    }
+
+    start_select.firstChild.setAttribute("selected", "selected");
+    end_select.lastChild.setAttribute("selected", "selected");
+
+    button.addEventListener("click", () => {
+      const start_index = Number(start_select.value);
+      const end_index = Number(end_select.value);
+      const chosen_chapters_metadata_list = chapter_metadata_list.slice(
+        start_index,
+        end_index + 1
+      );
+      downloadChapters(chosen_chapters_metadata_list);
+    });
+
+    start_select.addEventListener("change", () => {
+      const all_start_selects = document.querySelectorAll(
+        "select.rtonne-royalroad-download-button-start-select"
+      );
+      for (const select of all_start_selects) {
+        select.value = start_select.value;
+      }
+    });
+
+    end_select.addEventListener("change", () => {
+      const all_end_selects = document.querySelectorAll(
+        "select.rtonne-royalroad-download-button-end-select"
+      );
+      for (const select of all_end_selects) {
+        select.value = end_select.value;
+      }
+    });
+  }
+}
+
+async function setupChapterPageDownload() {
   const button = document.createElement("a");
-  button.className = "btn btn-primary RRScraperDownloadButton";
+  button.className =
+    "btn btn-primary rtonne-royalroad-download-button-chapter-button";
 
-  const i = document.createElement("i");
-  i.className = "fa fa-download";
-  button.appendChild(i);
+  const button_icon = document.createElement("i");
+  button_icon.className = "fa fa-download";
+  button.appendChild(button_icon);
 
-  const span = document.createElement("span");
-  span.innerText = " Download Chapter";
-  span.className = "center";
-  button.appendChild(span);
+  const button_text = document.createElement("span");
+  button_text.innerText = " Download Chapter";
+  button_text.className = "center";
+  button.appendChild(button_text);
 
-  const fictionPageButton = document.querySelector(
+  const royalroad_fiction_page_button = document.querySelector(
     "a.btn.btn-block.btn-primary"
   );
-  const rssButton = document.querySelector("a.btn-sm.yellow-gold");
+  const royalroad_rss_button = document.querySelector("a.btn-sm.yellow-gold");
 
-  //=====
-  // Insert clones of the created elements to both positions
-  // And add their event functions
-  //=====
+  const button_clone = button.cloneNode(true);
+  button_clone.classList.add("btn-block");
+  button_clone.classList.add("margin-bottom-5");
+  royalroad_fiction_page_button.after(button_clone);
 
-  let onClick = () => {
-    downloadChapters(
-      [],
-      chapters.length,
-      chapters.findIndex((chapter) =>
-        window.location.href.includes(chapter.url)
-      )
-    );
-  };
-
-  let buttonClone = button.cloneNode(true);
-  buttonClone.classList.add("btn-block");
-  buttonClone.classList.add("margin-bottom-5");
-  buttonClone.onclick = onClick;
-  fictionPageButton.insertAdjacentElement("afterend", buttonClone);
-
-  buttonClone = button.cloneNode(true);
-  buttonClone.classList.add("btn-sm");
-  buttonClone.setAttribute(
+  button.classList.add("btn-sm");
+  button.setAttribute(
     "style",
     "border-radius: 4px !important; margin-right: 5px;"
   );
-  buttonClone.onclick = onClick;
-  rssButton.insertAdjacentElement("beforebegin", buttonClone);
+  royalroad_rss_button.before(button);
+
+  const time_element = document.querySelector("i[title='Published'] ~ time");
+  const date = shortenDate(time_element.getAttribute("datetime"));
+
+  const chapter_metadata = {
+    url: window.location.href,
+    date: date,
+  };
+
+  button_clone.addEventListener("click", () =>
+    downloadChapters([chapter_metadata])
+  );
+  button.addEventListener("click", () => downloadChapters([chapter_metadata]));
 }
 
-async function fictionPageDownload() {
-  const chapters = await fetchChapterList();
-
-  //=====
-  // Create the download buttons and other elements
-  //=====
-
-  const container = document.createElement("div");
-  container.style.marginBottom = "10px";
-
-  const button = document.createElement("a");
-  button.className = "button-icon-large RRScraperDownloadAllButton";
-  button.style.marginBottom = "0";
-  container.appendChild(button);
-
-  const buttonStyle = getComputedStyle(
-    document.querySelector("a.button-icon-large")
+/**
+ * Get chapters' contents, pack them into a ZIP file,
+ * and send a download request to the user.
+ * @param {[{url: string, date: string}]} chapter_metadata_list
+ */
+async function downloadChapters(chapter_metadata_list) {
+  const fiction_buttons = document.querySelectorAll(
+    "a.rtonne-royalroad-download-button-fiction-button"
   );
-  const progressBar = document.createElement("div");
-  progressBar.style.position = "absolute";
-  progressBar.style.top = `calc(${buttonStyle.height} - ${buttonStyle.borderBottomWidth})`;
-  progressBar.style.left = "0";
-  progressBar.style.height = buttonStyle.borderBottomWidth;
-  progressBar.style.background = getComputedStyle(
-    document.querySelector("a.btn-primary")
-  ).backgroundColor;
-  progressBar.style.width = "0";
-  progressBar.className = "RRScraperProgressBar";
-  button.appendChild(progressBar);
-
-  const i = document.createElement("i");
-  i.className = "fa fa-download";
-  button.appendChild(i);
-
-  const span = document.createElement("span");
-  span.innerText = "Download Chapters";
-  span.className = "center";
-  button.appendChild(span);
-
-  const form = document.createElement("div");
-  form.className = "icon-container";
-  form.style.padding = "5px";
-  form.style.marginLeft = "5px";
-  form.style.marginRight = "5px";
-  container.appendChild(form);
-
-  const labelFrom = document.createElement("span");
-  labelFrom.innerText = "From:";
-  labelFrom.className = "tip";
-  labelFrom.style.position = "unset";
-  form.appendChild(labelFrom);
-
-  const selectFrom = document.createElement("select");
-  selectFrom.className = "form-control RRScraperFromSelect";
-  selectFrom.style.marginBottom = "5px";
-  form.appendChild(selectFrom);
-
-  const labelTo = document.createElement("span");
-  labelTo.innerText = "To:";
-  labelTo.className = "tip";
-  labelTo.style.position = "unset";
-  form.appendChild(labelTo);
-
-  const selectTo = document.createElement("select");
-  selectTo.className = "form-control RRScraperToSelect";
-  form.appendChild(selectTo);
-
-  for (const [index, chapter] of chapters.entries()) {
-    const option = document.createElement("option");
-    option.value = index;
-    option.innerText = chapter.title;
-    selectFrom.appendChild(option);
-    selectTo.appendChild(option.cloneNode(true));
+  const chapter_buttons = document.querySelectorAll(
+    "a.rtonne-royalroad-download-button-chapter-button"
+  );
+  const progress_bars = document.querySelectorAll(
+    "div.rtonne-royalroad-download-button-progress-bar"
+  );
+  // Disable all the download buttons
+  for (const button of fiction_buttons) {
+    button.style.pointerEvents = "none";
+    button.style.background = "#060606";
+    button.style.borderBottom = "2px inset rgba(256,256,256,.1)";
+  }
+  for (const button of chapter_buttons) {
+    button.style.pointerEvents = "none";
+    button.style.opacity = ".65";
   }
 
-  selectFrom.firstChild.setAttribute("selected", "selected");
-  selectTo.lastChild.setAttribute("selected", "selected");
+  const zip = new JSZip();
 
-  //=====
-  // Insert clones of the created elements to both button lists for different screen widths
-  // And add their event functions
-  //=====
+  const fiction_name = window.location.href.split("/")[5];
 
-  const defaultButtonRows = document.querySelectorAll("div.row.reduced-gutter");
-  defaultButtonRows.forEach((defaultButtonRow) => {
-    const containerClone = container.cloneNode(true);
-    defaultButtonRow.insertAdjacentElement("afterend", containerClone);
+  for (let index = 0; index < chapter_metadata_list.length; index++) {
+    const chapter_metadata = chapter_metadata_list[index];
+    const html = await fetchChapterHtml(chapter_metadata.url);
 
-    containerClone.querySelector("a.RRScraperDownloadAllButton").onclick =
-      () => {
-        const startIndex = Number(
-          document.querySelector("select.RRScraperFromSelect").value
-        );
-        const endIndex = Number(
-          document.querySelector("select.RRScraperToSelect").value
-        );
-        const chosenChapters = chapters.slice(startIndex, endIndex + 1);
-        downloadChapters(
-          chosenChapters.map((chapter) => chapter.url),
-          chapters.length,
-          startIndex
-        );
-      };
+    let prev_date;
+    let next_date;
+    if (index - 1 >= 0) {
+      prev_date = chapter_metadata_list[index - 1].date;
+    }
+    if (index + 1 < chapter_metadata_list.length - 1) {
+      next_date = chapter_metadata_list[index + 1].date;
+    }
 
-    containerClone.querySelector("select.RRScraperFromSelect").onchange =
-      () => {
-        document
-          .querySelectorAll("select.RRScraperFromSelect")
-          .forEach((select) => {
-            select.value = containerClone.querySelector(
-              "select.RRScraperFromSelect"
-            ).value;
-          });
-      };
+    const processed_html = await processChapterHtml(
+      chapter_metadata.url,
+      html,
+      prev_date,
+      next_date
+    );
 
-    containerClone.querySelector("select.RRScraperToSelect").onchange = () => {
-      document
-        .querySelectorAll("select.RRScraperToSelect")
-        .forEach((select) => {
-          select.value = containerClone.querySelector(
-            "select.RRScraperToSelect"
-          ).value;
-        });
-    };
-  });
+    const chapter_url_split = chapter_metadata.url.split("/");
+    const chapter_name = chapter_url_split[chapter_url_split.length - 1];
+
+    zip.file(
+      `${fiction_name}/${chapter_metadata.date}_${chapter_name}.html`,
+      processed_html
+    );
+
+    // Change the progress bars
+    for (const progress_bar of progress_bars) {
+      progress_bar.style.width = `${
+        ((index + 1) / chapter_metadata_list.length) * 100
+      }%`;
+    }
+  }
+
+  await zip
+    .generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: {
+        level: 9,
+      },
+    })
+    .then((blob) => {
+      saveAs(blob, fiction_name + ".zip");
+    });
+
+  // Re-enable all the download buttons, and reset the progress bars
+  for (const button of fiction_buttons) {
+    button.style.pointerEvents = null;
+    button.style.background = null;
+    button.style.borderBottom = null;
+  }
+  for (const button of chapter_buttons) {
+    button.style.pointerEvents = null;
+    button.style.opacity = null;
+  }
+  for (const progress_bar of progress_bars) {
+    progress_bar.style.width = "0";
+  }
 }
 
-async function fetchChapterList(url = null) {
-  const parser = new DOMParser();
+/**
+ * Turn RoyalRoad's chapter html into one better for offline reading.
+ * @param {string} chapter_url
+ * @param {HTMLHtmlElement} html
+ * @param {string} [prev_date] The publish date of the previous chapter.
+ * @param {string} [next_date] The publish date of the next chapter.
+ */
+async function processChapterHtml(chapter_url, html, prev_date, next_date) {
+  // Edit spoilers so they function the same offline
+  const spoilers = html.querySelectorAll(".spoiler-new, .spoiler");
+  for (const spoiler of spoilers) {
+    if (spoiler.classList.contains("spoiler")) {
+      spoiler.innerHTML = spoiler.querySelector(".spoiler-inner").innerHTML;
+    }
+    spoiler.className = "spoiler";
+    const spoiler_content = document.createElement("div");
+    for (const child of spoiler.children) {
+      spoiler_content.append(child);
+    }
+    const spoiler_label = document.createElement("label");
+    spoiler_label.innerText = "Spoiler";
+    const spoiler_checkbox = document.createElement("input");
+    spoiler_checkbox.type = "checkbox";
+    spoiler_label.append(spoiler_checkbox);
+    spoiler.append(spoiler_label);
+    spoiler.append(spoiler_content);
+  }
+
+  // Edit the header links so they work offline
+  const chapter_header = html.querySelector(
+    "div.fic-header > div > div.col-lg-6"
+  );
+  const chapter_header_links = chapter_header.querySelectorAll("a");
+  for (const link of chapter_header_links) {
+    link.setAttribute(
+      "href",
+      `https://www.royalroad.com${link.getAttribute("href")}`
+    );
+  }
+  chapter_header.querySelector(
+    "h1"
+  ).innerHTML = `<a href="${chapter_url}" class="font-white">${
+    chapter_header.querySelector("h1").innerHTML
+  }</a>`;
+
+  let chapter =
+    getCustomChapterHeader() +
+    chapter_header.outerHTML +
+    '<div class="portlet">';
+
+  const chapterElements = html.querySelector("div.chapter-content").parentNode
+    .children;
+  for (const element of chapterElements) {
+    if (
+      element.classList.contains("chapter-content") ||
+      element.classList.contains("author-note-portlet")
+    ) {
+      // Add chapter content and author notes
+      chapter += element.outerHTML;
+    } else if (
+      element.classList.contains("nav-buttons") ||
+      element.classList.contains("margin-bottom-10")
+    ) {
+      // Add prev/next/index buttons and make them work offline
+      const buttons = element.querySelectorAll("a");
+      for (const button of buttons) {
+        if (button.innerText.includes("Index")) {
+          button.setAttribute("href", ".");
+          break;
+        }
+
+        // "unknown" should never end up being used
+        let filename_prefix = "unknown";
+        // Get the dates here if the button exists but the date is null
+        // (can occur if a chapter comes out after we get the chapter metadata list)
+        // Will also be used for the chapter button
+        // TODO figure out what should happen if the prev/next chapter no longer exists
+        if (button.innerText.includes("Previous")) {
+          if (!prev_date) {
+            const prev_html = await fetchChapterHtml(button.href);
+            const prev_time_element = prev_html.querySelector(
+              "i[title='Published'] ~ time"
+            );
+            prev_date = shortenDate(prev_time_element.getAttribute("datetime"));
+          }
+          filename_prefix = shortenDate(prev_date);
+        } else if (button.innerText.includes("Next")) {
+          if (!next_date) {
+            const next_html = await fetchChapterHtml(button.href);
+            const next_time_element = next_html.querySelector(
+              "i[title='Published'] ~ time"
+            );
+            next_date = shortenDate(next_time_element.getAttribute("datetime"));
+          }
+          filename_prefix = shortenDate(next_date);
+        }
+
+        let adjacent_chapter_url_split = button.getAttribute("href").split("/");
+        let adjacent_chapter_name =
+          adjacent_chapter_url_split[adjacent_chapter_url_split.length - 1];
+
+        button.setAttribute(
+          "href",
+          `${filename_prefix}_${adjacent_chapter_name}.html`
+        );
+      }
+      chapter += element.outerHTML;
+    }
+  }
+
+  chapter += getCustomChapterFooter();
+
+  /* Regex explanation:
+    Deletes whitespace at the start of each line.
+    Deletes whitespace at the end of each line, including the newline.
+  */
+  chapter = chapter.replace(/^\s+|(\s*\n)/gm, "");
+
+  return chapter;
+}
+
+/**
+ * @param {string} chapter_url
+ * @returns {Promise<HTMLHtmlElement>}
+ */
+async function fetchChapterHtml(chapter_url) {
+  // TODO: watch out for errors like 429 (Too many requests), or if the chapter no longer exists
+  const html = await fetch(chapter_url, {
+    credentials: "omit",
+  })
+    .then((response) => response.text())
+    .then((text) => PARSER.parseFromString(text, "text/html"));
+
+  return html;
+}
+
+/**
+ * Gets all the chapters from a fiction page.
+ * If url is null, the current page is used.
+ * @param {string} [url]
+ * @returns {Promise<[{title: string, url: string, date: string}]>}
+ */
+async function fetchChapterMetadataList(url = null) {
+  // If its not a fiction page, return an empty chapter list
+  if (
+    (url === null && !FICTION_REGEX.test(window.location.href)) ||
+    (url !== null && !FICTION_REGEX.test(url))
+  ) {
+    return [];
+  }
+
   let html;
 
   if (url === null) {
@@ -233,239 +451,52 @@ async function fetchChapterList(url = null) {
       credentials: "omit",
     })
       .then((response) => response.text())
-      .then((text) => parser.parseFromString(text, "text/html"));
+      .then((text) => PARSER.parseFromString(text, "text/html"));
   }
 
-  const chapters = [
-    ...html.querySelectorAll("tr.chapter-row td:not(.text-right) a"),
+  const chapter_metadata_list = [
+    ...html.querySelectorAll("tr.chapter-row"),
   ].map((element) => {
+    const left_link = element.querySelector("td:not(.text-right) a");
+    const time_element = element.querySelector("td.text-right a time");
     return {
-      title: element.innerText.trim(),
-      url: element.getAttribute("href"),
+      title: left_link.innerText.trim(),
+      url: left_link.getAttribute("href"),
+      date: shortenDate(time_element.getAttribute("datetime")),
     };
   });
 
   // Because javascript hides chapters from the list
   // we check and retry if chapters are hidden
   if (
-    chapters.length === 20 &&
+    chapter_metadata_list.length === 20 &&
     html.querySelectorAll(".pagination-small").length > 0
   ) {
-    return fetchChapterList(url);
+    return fetchChapterMetadataList(url);
   }
 
-  return chapters;
+  return chapter_metadata_list;
 }
 
-async function downloadChapters(chapterUrls, totalChapterCount, startIndex) {
-  const chapterRegex = new RegExp(
-    /https:\/\/www.royalroad.com\/fiction\/.*?\/chapter\/.*/g
-  );
-  if (chapterUrls.length === 0 && !chapterRegex.test(window.location.href))
-    return;
-
-  // Disable all the download buttons
-  document
-    .querySelectorAll("a.RRScraperDownloadAllButton")
-    .forEach((element) => {
-      element.style.pointerEvents = "none";
-      element.style.background = "#060606";
-      element.style.borderBottom = "2px inset rgba(256,256,256,.1)";
-    });
-  document.querySelectorAll("a.RRScraperDownloadButton").forEach((element) => {
-    element.style.pointerEvents = "none";
-    element.style.opacity = ".65";
-  });
-
-  const zip = new JSZip();
-  const parser = new DOMParser();
-
-  const fictionName = window.location.href.split("/")[5];
-
-  const totalChapterCountLength = totalChapterCount.toString().length;
-
-  // 0 required so all chapter numbers use the same amount of characters
-  const fillZeros = "0".repeat(totalChapterCountLength);
-
-  // timeoutLoop for the progress bar to work
-  let index = 0;
-  async function timeoutLoop() {
-    let chapterUrl;
-    let html;
-    if (chapterUrls.length > 0) {
-      // If its downloading from a fiction page
-      chapterUrl = chapterUrls[index];
-
-      html = await fetch("https://www.royalroad.com" + chapterUrl, {
-        credentials: "omit",
-      })
-        .then((response) => response.text())
-        .then((text) => parser.parseFromString(text, "text/html"));
-      if (
-        html.body.firstChild.tagName === "PRE" &&
-        html.body.firstChild.innerText === "Slow down!"
-      ) {
-        // When pages are loaded too fast RoyalRoad may tell you to slow down
-        // So we retry it if it does
-        print("Slow down!");
-        setTimeout(timeoutLoop, 0);
-        return;
-      }
-    } else {
-      // If its downloading from a chapter page
-      chapterUrl = window.location.href.match(/\/fiction.*/g)[0];
-      html = document.querySelector("html").cloneNode(true);
-    }
-
-    // Edit spoilers so they function the same offline
-    html.querySelectorAll(".spoiler-new, .spoiler").forEach((element) => {
-      if (element.classList.contains("spoiler")) {
-        element.innerHTML = element.querySelector(".spoiler-inner").innerHTML;
-      }
-      element.className = "spoiler";
-      const spoilerContent = document.createElement("div");
-      [...element.children].forEach((child) =>
-        spoilerContent.appendChild(child)
-      );
-      const spoilerLabel = document.createElement("label");
-      spoilerLabel.innerText = "Spoiler";
-      const spoilerCheckbox = document.createElement("input");
-      spoilerCheckbox.type = "checkbox";
-      spoilerLabel.appendChild(spoilerCheckbox);
-      element.appendChild(spoilerLabel);
-      element.appendChild(spoilerContent);
-    });
-
-    // Edit the header links so they work offline
-    let chapterHeader = html.querySelector(
-      "div.fic-header > div > div.col-lg-6"
-    );
-    chapterHeader.querySelectorAll("a").forEach((element) => {
-      element.setAttribute(
-        "href",
-        `https://www.royalroad.com${element.getAttribute("href")}`
-      );
-    });
-    chapterHeader.querySelector(
-      "h1"
-    ).innerHTML = `<a href="https://www.royalroad.com${chapterUrl}" class="font-white">${
-      chapterHeader.querySelector("h1").innerHTML
-    }</a>`;
-
-    let chapter = getCustomHeader() + chapterHeader.outerHTML;
-
-    chapter += '\n<div class="portlet">';
-
-    [...html.querySelector("div.chapter-content").parentNode.children].forEach(
-      (element) => {
-        if (
-          element.classList.contains("chapter-content") ||
-          element.classList.contains("author-note-portlet")
-        ) {
-          // Add chapter content and author notes
-          chapter += "\n" + element.outerHTML;
-        } else if (
-          element.classList.contains("nav-buttons") ||
-          element.classList.contains("margin-bottom-10")
-        ) {
-          // Add prev/next/index buttons and make them work offline
-          element.querySelectorAll("a").forEach((element2) => {
-            if (element2.innerText.includes("Index")) {
-              element2.setAttribute("href", ".");
-              return;
-            }
-            let adjFilledIndex = "";
-            if (startIndex < 0) {
-              // if chapter couldn't be found in list
-              // either because it was renamed or deleted
-              adjFilledIndex = "unknown";
-            } else if (element2.innerText.includes("Previous")) {
-              adjFilledIndex = (fillZeros + (index + startIndex)).slice(
-                totalChapterCountLength * -1
-              );
-            } else if (element2.innerText.includes("Next")) {
-              adjFilledIndex = (fillZeros + (index + startIndex + 2)).slice(
-                totalChapterCountLength * -1
-              );
-            }
-            let adjChapterUrlSplit = element2.getAttribute("href").split("/");
-            let adjChapterName =
-              adjChapterUrlSplit[adjChapterUrlSplit.length - 1];
-            element2.setAttribute(
-              "href",
-              `${adjFilledIndex}_${adjChapterName}.html`
-            );
-          });
-          chapter += "\n" + element.outerHTML;
-        }
-      }
-    );
-
-    chapter += getCustomFooter();
-
-    chapter = chapter.replace(/^\s+|(\s*\n)/gm, "");
-
-    let chapterUrlSplit = chapterUrl.split("/");
-    let chapterName = chapterUrlSplit[chapterUrlSplit.length - 1];
-
-    let filledIndex;
-    if (startIndex < 0) {
-      // if chapter couldn't be found in list
-      // either because it was renamed or deleted
-      filledIndex = "unknown";
-    } else {
-      filledIndex = (fillZeros + (index + startIndex + 1)).slice(
-        totalChapterCountLength * -1
-      );
-    }
-
-    zip.file(`${fictionName}/${filledIndex}_${chapterName}.html`, chapter);
-
-    // Change progress bar
-    document.querySelectorAll("div.RRScraperProgressBar").forEach((element) => {
-      element.style.width = `${((index + 1) / chapterUrls.length) * 100}%`;
-    });
-
-    if (++index < chapterUrls.length) {
-      // If there are chapters left, fetch them
-      setTimeout(timeoutLoop, 0);
-    } else {
-      // If all chapters have been fetched, zip them and download them
-      zip
-        .generateAsync({
-          type: "blob",
-          compression: "DEFLATE",
-          compressionOptions: {
-            level: 9,
-          },
-        })
-        .then((blob) => {
-          saveAs(blob, fictionName + ".zip");
-
-          // Re-enable all the download buttons
-          document
-            .querySelectorAll("a.RRScraperDownloadAllButton")
-            .forEach((element) => {
-              element.style.pointerEvents = null;
-              element.style.background = null;
-              element.style.borderBottom = null;
-              element.querySelector("div.RRScraperProgressBar").style.width =
-                "0";
-            });
-          document
-            .querySelectorAll("a.RRScraperDownloadButton")
-            .forEach((element) => {
-              element.style.pointerEvents = null;
-              element.style.opacity = null;
-            });
-        });
-    }
+/**
+ * Turns a date with a format like "2023-06-21T22:02:45.0000000Z"
+ * into something like "20230621220245".
+ * @param {string} date
+ * @returns {string}
+ */
+function shortenDate(date) {
+  if (!date) {
+    return "";
   }
-  setTimeout(timeoutLoop, 0);
+  return date
+    .split(".")[0]
+    .replaceAll("-", "")
+    .replaceAll(":", "")
+    .replaceAll("T", "");
 }
 
-function getCustomHeader() {
-  return `<!DOCTYPE html>
+function getCustomChapterHeader() {
+  const header = /*html*/ `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -669,12 +700,23 @@ img {
 </style>
 </head>
 <body>
-<div class="container">`.replace(
+<div class="container">`;
+
+  /* Regex explanation:
+  Deletes whitespace at the start of each line.
+  Deletes whitespace at the end of each line, including the newline.
+  Deletes whitespace before "{", "(", "}", ")", "/", ":", ",", "<", ">".
+  ("?=" means that the character ahead is found but not selected for deletion)
+  Deletes whitespace after "{", "(", "}", ")", "/", ":", ",", "<", ">".
+  ("?<=" means that the character behind is found but not selected for deletion)
+  */
+  const no_newlines_header = header.replace(
     /^\s+|(\s*\n)|(\s+(?=[\{\(\}\)\/:,<>]))|((?<=[\{\(\}\)\/:,<>])\s+)/gm,
     ""
   );
+  return no_newlines_header;
 }
 
-function getCustomFooter() {
+function getCustomChapterFooter() {
   return "</div></div></body></html>";
 }
