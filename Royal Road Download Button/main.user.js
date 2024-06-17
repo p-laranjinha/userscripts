@@ -790,6 +790,7 @@ img {
   display: inline-block;
   padding-left: 15px;
   padding-right: 15px;
+  margin: 0;
 }
 </style>
 </head>
