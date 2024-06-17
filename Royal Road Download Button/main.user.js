@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
-// @version     5.3
+// @version     5.4
 // @author      Rtonne
 // @description Adds buttons to download to Royal Road chapters
 // The following @require is needed for jszip to work with @grant
@@ -791,6 +791,11 @@ img {
   padding-left: 15px;
   padding-right: 15px;
   margin: 0;
+}
+hr {
+  margin: 20px 0;
+  border: 0;
+  border-top: 1px solid hsla(0, 0%, 100%, .3);
 }
 </style>
 </head>
