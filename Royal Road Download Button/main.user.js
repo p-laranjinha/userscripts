@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
-// @version     5.1
+// @version     5.2
 // @author      Rtonne
 // @description Adds buttons to download to Royal Road chapters
 // The following @require is needed for jszip to work with @grant
@@ -278,7 +278,6 @@ async function downloadChapters(chapter_metadata_list) {
     } else {
       filename_prefix = chapter_metadata.date;
     }
-    console.log("prefix", filename_prefix);
 
     zip.file(
       `${fiction_name}/${filename_prefix}_${chapter_name}.html`,
@@ -370,6 +369,27 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
     chapter_header.querySelector("h1").innerHTML
   }</a>`;
 
+  // Add publishing date and last edit date to the header
+  // Not using html.querySelector(".profile-info > ul") so that we only get the date items
+  const dates_container = document.createElement("ul");
+  dates_container.className = "list-inline";
+  const date_elements = html.querySelectorAll(
+    ".profile-info > ul > li:has(i[title='Published']), .profile-info > ul > li:has(i[title='Last Edit'])"
+  );
+  for (const element of date_elements) {
+    const date_time_element = element.querySelector("time");
+    const date_icon_element = element.querySelector("i");
+    // I could use Date.prototype.toLocaleString, but I personally prefer this
+    date_time_element.innerText =
+      date_time_element
+        .getAttribute("datetime")
+        .split(".")[0]
+        .replaceAll("T", " ") + " UTC";
+    date_icon_element.innerText = date_icon_element.getAttribute("title") + ":";
+    dates_container.append(element);
+  }
+  chapter_header.append(dates_container);
+
   let chapter =
     getCustomChapterHeader() +
     chapter_header.outerHTML +
@@ -378,11 +398,15 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
   const chapterElements = html.querySelector("div.chapter-content").parentNode
     .children;
   for (const element of chapterElements) {
-    if (
-      element.classList.contains("chapter-content") ||
-      element.classList.contains("author-note-portlet")
-    ) {
-      // Add chapter content and author notes
+    if (element.classList.contains("chapter-content")) {
+      // Remove unnecessary classes from <p> and add chapter content
+      const paragraphs = element.querySelectorAll(":scope > p");
+      for (let paragraph of paragraphs) {
+        paragraph.removeAttribute("class");
+      }
+      chapter += element.outerHTML;
+    } else if (element.classList.contains("author-note-portlet")) {
+      // Add author notes
       chapter += element.outerHTML;
     } else if (
       element.classList.contains("nav-buttons") ||
@@ -473,7 +497,13 @@ async function fetchChapterHtml(chapter_url) {
     credentials: "omit",
   })
     .then((response) => response.text())
-    .then((text) => PARSER.parseFromString(text, "text/html"));
+    .then((text) => PARSER.parseFromString(text, "text/html"))
+    .catch((error) => {
+      alert(
+        "An error has ocurred while fetching a chapter. Please refresh and try again. More details in the console."
+      );
+      throw error;
+    });
 
   return html;
 }
@@ -750,6 +780,16 @@ table td {
 img {
   height: auto !important;
   max-width: 100%;
+}
+.list-inline {
+  list-style: none;
+  padding-left: 0;
+  color: hsla(0, 0%, 100%, 0.8);
+}
+.list-inline > li {
+  display: inline-block;
+  padding-left: 15px;
+  padding-right: 15px;
 }
 </style>
 </head>
