@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
-// @version     5.2
+// @version     5.3
 // @author      Rtonne
 // @description Adds buttons to download to Royal Road chapters
 // The following @require is needed for jszip to work with @grant
@@ -205,7 +205,7 @@ async function setupChapterPageDownload() {
   const date = shortenDate(time_element.getAttribute("datetime"));
 
   const chapter_metadata = {
-    url: window.location.href,
+    url: window.location.href.split("https://www.royalroad.com")[1],
     date: date,
   };
 
@@ -365,7 +365,7 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
   }
   chapter_header.querySelector(
     "h1"
-  ).innerHTML = `<a href="${chapter_url}" class="font-white">${
+  ).innerHTML = `<a href="https://www.royalroad.com${chapter_url}" class="font-white">${
     chapter_header.querySelector("h1").innerHTML
   }</a>`;
 
