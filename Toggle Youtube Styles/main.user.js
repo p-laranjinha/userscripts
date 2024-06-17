@@ -4,10 +4,10 @@
 // @namespace   rtonne
 // @match       https://www.youtube.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=youtube.com
-// @version     1.5
+// @version     1.6
 // @author      Rtonne
 // @description Adds toggles to enable/disable some styles that change Youtube
-// @require     https://update.greasyfork.org/scripts/498119/1395413/setupToggleCommands.js
+// @require     https://update.greasyfork.org/scripts/498119/1395863/setupToggleCommands.js
 // @grant       GM.addStyle
 // @grant       GM.registerMenuCommand
 // @grant       GM.unregisterMenuCommand
@@ -18,9 +18,9 @@
 const commands = [
   {
     id: "guide_sections",
-    default: true,
-    on_text: "☑ Guide Sections",
-    off_text: "☐ Guide Sections",
+    default_value: true,
+    on_text: "🞕 Guide Sections",
+    off_text: "🞎 Guide Sections",
     toggleOnFunction: () =>
       GM.addStyle(`
       #sections.ytd-guide-renderer > ytd-guide-section-renderer:nth-child(n+3) {
@@ -36,9 +36,9 @@ const commands = [
   },
   {
     id: "comments",
-    default: true,
-    on_text: "☑ Comments",
-    off_text: "☐ Comments",
+    default_value: true,
+    on_text: "🞕 Comments",
+    off_text: "🞎 Comments",
     toggleOnFunction: () =>
       GM.addStyle(`
       ytd-comments#comments {
@@ -54,9 +54,9 @@ const commands = [
   },
   {
     id: "related_videos",
-    default: true,
-    on_text: "☑ Related Videos",
-    off_text: "☐ Related Videos",
+    default_value: true,
+    on_text: "🞕 Related Videos",
+    off_text: "🞎 Related Videos",
     toggleOnFunction: () =>
       GM.addStyle(`
       #secondary.ytd-watch-flexy > #secondary-inner > #related {
@@ -72,9 +72,9 @@ const commands = [
   },
   {
     id: "shorts",
-    default: true,
-    on_text: "☑ Shorts",
-    off_text: "☐ Shorts",
+    default_value: true,
+    on_text: "🞕 Shorts",
+    off_text: "🞎 Shorts",
     toggleOnFunction: () =>
       GM.addStyle(`
       ytd-rich-section-renderer:has(> div > [is-shorts]) {
@@ -90,9 +90,9 @@ const commands = [
   },
   {
     id: "community",
-    default: true,
-    on_text: "☑ Community Posts",
-    off_text: "☐ Community Posts",
+    default_value: true,
+    on_text: "🞕 Community Posts",
+    off_text: "🞎 Community Posts",
     toggleOnFunction: () =>
       GM.addStyle(`
       ytd-rich-section-renderer:has(> div > :not([is-shorts]):not([thumbnail-style])) {
