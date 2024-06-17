@@ -4,6 +4,8 @@ When the button is pressed, the script scrapes the chosen chapters of the fictio
 
 The .html files contain styling to emulate Royal Road's default dark mode (with font size 16 due to personal preference), and working previous/next chapter buttons on desktop using the [file URI scheme](https://en.wikipedia.org/wiki/File_URI_scheme).
 
+You can choose if you want to use the chapter's publish date, or the chapter ID in the chapter's URL, as the filename prefix in order to keep the downloaded files in the correct order. This choice is in your userscript manager.
+
 If you want the file names to use incremental numbers as the prefix, the last version that did this is [v4.8](https://greasyfork.org/en/scripts/466670-royal-road-download-button?version=1367939).
 
 Tags: Royal Road, RoyalRoad, RR, Web Novel, royalroad.com
@@ -13,3 +15,4 @@ Tags: Royal Road, RoyalRoad, RR, Web Novel, royalroad.com
 ![Image of the button on a fiction page](https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/fiction_button.png)
 ![Image of the button on the top of a chapter page](https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/chapter_top_button.png)
 ![Image of the button on the bottom of a chapter page](https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/chapter_bottom_button.png)
+![Image of the options in violentmonkey](https://github.com/p-laranjinha/userscripts/raw/master/Royal%20Road%20Download%20Button/images/options.png)

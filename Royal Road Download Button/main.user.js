@@ -4,14 +4,34 @@
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
-// @grant       none
-// @version     5
+// @version     5.1
 // @author      Rtonne
 // @description Adds buttons to download to Royal Road chapters
+// The following @require is needed for jszip to work with @grant
+// @require     data:application/javascript,window.setImmediate%20%3D%20window.setImmediate%20%7C%7C%20((f%2C%20...args)%20%3D%3E%20window.setTimeout(()%20%3D%3E%20f(args)%2C%200))%3B
 // @require     https://cdn.jsdelivr.net/npm/jszip@3.10.1
 // @require     https://cdn.jsdelivr.net/npm/file-saver@2.0.5
+// @require     https://update.greasyfork.org/scripts/498119/1395863/setupToggleCommands.js
 // @run-at      document-end
+// @grant       GM.registerMenuCommand
+// @grant       GM.unregisterMenuCommand
+// @grant       GM.getValue
+// @grant       GM.setValue
 // ==/UserScript==
+
+/** @type {_Command[]} */
+const command_list = [
+  {
+    id: "use_chapter_id_as_prefix",
+    off_text: "🞎 Use the chapter ID as the file prefix",
+    on_text: "🞕 Use the chapter ID as the file prefix",
+    off_tooltip:
+      "Currently using the chapter's publish date as the filename's prefix.",
+    on_tooltip:
+      "Currently using the chapter ID in the chapter's URL as the filename's prefix.",
+  },
+];
+setupToggleCommands(command_list);
 
 const FICTION_REGEX = new RegExp(
   /^https:\/\/www.royalroad.com\/fiction\/\d+?\/[^\/]+$/
@@ -201,6 +221,11 @@ async function setupChapterPageDownload() {
  * @param {[{url: string, date: string}]} chapter_metadata_list
  */
 async function downloadChapters(chapter_metadata_list) {
+  const use_chapter_id_as_prefix = await GM.getValue(
+    "use_chapter_id_as_prefix",
+    false
+  );
+
   const fiction_buttons = document.querySelectorAll(
     "a.rtonne-royalroad-download-button-fiction-button"
   );
@@ -247,9 +272,16 @@ async function downloadChapters(chapter_metadata_list) {
 
     const chapter_url_split = chapter_metadata.url.split("/");
     const chapter_name = chapter_url_split[chapter_url_split.length - 1];
+    let filename_prefix;
+    if (use_chapter_id_as_prefix) {
+      filename_prefix = chapter_url_split[chapter_url_split.length - 2];
+    } else {
+      filename_prefix = chapter_metadata.date;
+    }
+    console.log("prefix", filename_prefix);
 
     zip.file(
-      `${fiction_name}/${chapter_metadata.date}_${chapter_name}.html`,
+      `${fiction_name}/${filename_prefix}_${chapter_name}.html`,
       processed_html
     );
 
@@ -296,6 +328,11 @@ async function downloadChapters(chapter_metadata_list) {
  * @param {string} [next_date] The publish date of the next chapter.
  */
 async function processChapterHtml(chapter_url, html, prev_date, next_date) {
+  const use_chapter_id_as_prefix = await GM.getValue(
+    "use_chapter_id_as_prefix",
+    false
+  );
+
   // Edit spoilers so they function the same offline
   const spoilers = html.querySelectorAll(".spoiler-new, .spoiler");
   for (const spoiler of spoilers) {
@@ -359,6 +396,10 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
           break;
         }
 
+        const adjacent_chapter_url_split = button
+          .getAttribute("href")
+          .split("/");
+
         // "unknown" should never end up being used
         let filename_prefix = "unknown";
         // Get the dates here if the button exists but the date is null
@@ -366,27 +407,40 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
         // Will also be used for the chapter button
         // TODO figure out what should happen if the prev/next chapter no longer exists
         if (button.innerText.includes("Previous")) {
-          if (!prev_date) {
-            const prev_html = await fetchChapterHtml(button.href);
-            const prev_time_element = prev_html.querySelector(
-              "i[title='Published'] ~ time"
-            );
-            prev_date = shortenDate(prev_time_element.getAttribute("datetime"));
+          if (use_chapter_id_as_prefix) {
+            filename_prefix =
+              adjacent_chapter_url_split[adjacent_chapter_url_split.length - 2];
+          } else {
+            if (!prev_date) {
+              const prev_html = await fetchChapterHtml(button.href);
+              const prev_time_element = prev_html.querySelector(
+                "i[title='Published'] ~ time"
+              );
+              prev_date = shortenDate(
+                prev_time_element.getAttribute("datetime")
+              );
+            }
+            filename_prefix = shortenDate(prev_date);
           }
-          filename_prefix = shortenDate(prev_date);
         } else if (button.innerText.includes("Next")) {
-          if (!next_date) {
-            const next_html = await fetchChapterHtml(button.href);
-            const next_time_element = next_html.querySelector(
-              "i[title='Published'] ~ time"
-            );
-            next_date = shortenDate(next_time_element.getAttribute("datetime"));
+          if (use_chapter_id_as_prefix) {
+            filename_prefix =
+              adjacent_chapter_url_split[adjacent_chapter_url_split.length - 2];
+          } else {
+            if (!next_date) {
+              const next_html = await fetchChapterHtml(button.href);
+              const next_time_element = next_html.querySelector(
+                "i[title='Published'] ~ time"
+              );
+              next_date = shortenDate(
+                next_time_element.getAttribute("datetime")
+              );
+            }
+            filename_prefix = shortenDate(next_date);
           }
-          filename_prefix = shortenDate(next_date);
         }
 
-        let adjacent_chapter_url_split = button.getAttribute("href").split("/");
-        let adjacent_chapter_name =
+        const adjacent_chapter_name =
           adjacent_chapter_url_split[adjacent_chapter_url_split.length - 1];
 
         button.setAttribute(
