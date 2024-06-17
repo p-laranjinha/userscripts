@@ -28,11 +28,14 @@ async function setupToggleCommands(command_list) {
 /**
  * @typedef {Object} _Command
  * @property {string} id The id of the menu command and the key for the value.
- * @property {boolean} default The default value.
  * @property {string} off_text The text displayed when the last function ran was toggleOffFunction.
  * @property {string} on_text The text displayed when the last function ran was toggleOnFunction.
- * @property {() => void} toggleOffFunction A function to be run then toggling off the command.
- * @property {() => void} toggleOnFunction A function to be run then toggling on the command.
+ * @property {string} [off_tooltip] The tooltip shown while hovering the command when the last function ran was toggleOffFunction.
+ * @property {string} [on_tooltip] The tooltip shown while hovering the command when the last function ran was toggleOnFunction.
+ * @property {boolean} [default_value] The default value. Its "false" by default.
+ * @property {boolean} [auto_close] If the userscript manager popup closes when the command is clicked. Its "false" by default.
+ * @property {() => void} [toggleOffFunction] A function to be run then toggling off the command.
+ * @property {() => void} [toggleOnFunction] A function to be run then toggling on the command.
  */
 
 // To check if in place command replacement is supported
@@ -49,7 +52,7 @@ GM.unregisterMenuCommand("test");
 async function _toggleCommand(command_list, command) {
   await GM.setValue(
     command.id,
-    !(await GM.getValue(command.id, command.default))
+    !(await GM.getValue(command.id, command.default_value))
   );
   _runCommandFunction(command);
   if (_can_replace_in_place) {
@@ -72,13 +75,16 @@ async function _toggleCommand(command_list, command) {
  */
 async function _registerCommand(command_list, command) {
   let text = command.on_text;
-  if (!(await GM.getValue(command.id, command.default))) {
+  let tooltip = command.on_tooltip;
+  if (!(await GM.getValue(command.id, command.default_value))) {
     text = command.off_text;
+    tooltip = command.off_tooltip;
   }
 
   GM.registerMenuCommand(text, () => _toggleCommand(command_list, command), {
     id: command.id,
-    autoClose: false,
+    title: tooltip,
+    autoClose: command.auto_close !== undefined && command.auto_close,
   });
 }
 
@@ -87,9 +93,13 @@ async function _registerCommand(command_list, command) {
  * @param {_Command} command
  */
 async function _runCommandFunction(command) {
-  if (await GM.getValue(command.id, command.default)) {
-    command.toggleOnFunction();
+  if (await GM.getValue(command.id, command.default_value)) {
+    if (command.toggleOnFunction) {
+      command.toggleOnFunction();
+    }
   } else {
-    command.toggleOffFunction();
+    if (command.toggleOffFunction) {
+      command.toggleOffFunction();
+    }
   }
 }
