@@ -1,4 +1,4 @@
-Adds a clipboard button next to the other post buttons, to turn Patreon streamable posts into custom text on your clipboard.
+Adds a clipboard button next to the other post buttons, to turn Patreon IFrame embedded posts into custom text on your clipboard.
 
 To customize the text for yourself you can edit the `getClipboardContent()` function at the top of the script.
 

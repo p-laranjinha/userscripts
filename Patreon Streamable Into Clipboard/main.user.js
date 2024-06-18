@@ -1,23 +1,31 @@
 // ==UserScript==
-// @name        Patreon Streamable Into Clipboard
+// @name        Patreon IFrame Embed Into Clipboard
 // @license     MIT
 // @namespace   rtonne
 // @match       https://www.patreon.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=patreon.com
-// @version     1.2
+// @version     1.3
 // @author      Rtonne
-// @description Adds a button to turn patreon streamable posts into custom text on your clipboard
+// @description Adds a button to turn Patreon IFrame embedded posts into custom text on your clipboard
 // @run-at      document-end
 // @grant       GM.setClipboard
 // ==/UserScript==
 
-function getClipboardContent(post_title, post_url, streamable_url) {
+function getClipboardContent(post_title_text, post_url, post_iframe_url) {
+  // The content of this function is for my use case, and was put into this
+  // function so you could change it for your use case easier, so go ahead!
+  const post_iframe_search_url = post_iframe_url.substring(
+    post_iframe_url.indexOf("?") + 1
+  );
+  const post_iframe_search_params = new URLSearchParams(post_iframe_search_url);
+  const post_streamable_url = post_iframe_search_params.get("src");
+
   return `
-### ${post_title} [](${post_url})
+### ${post_title_text} [](${post_url})
 
 - [ ] :LiEye:
 
-<iframe src="${streamable_url}" style="width: 100%; max-height: 70vh; aspect-ratio: 16 / 9;" allowfullscreen></iframe>
+<iframe src="${post_streamable_url}" style="width: 100%; max-height: 70vh; aspect-ratio: 16 / 9;" allowfullscreen></iframe>
 `;
 }
 
@@ -66,12 +74,8 @@ const observer = new MutationObserver(async () => {
       post_video_figure
         .querySelector("div[data-tag='media-container']")
         .click();
-      const [streamable_iframe] = await waitForElements(element, "iframe");
-      const iframe_search_url = streamable_iframe.src.substring(
-        streamable_iframe.src.indexOf("?") + 1
-      );
-      const iframe_search_params = new URLSearchParams(iframe_search_url);
-      const iframe_url = iframe_search_params.get("src");
+      const [post_iframe] = await waitForElements(element, "iframe");
+      const post_iframe_url = post_iframe.src;
 
       const post_title = element.querySelector(
         "span[data-tag='post-title'] > a"
@@ -80,7 +84,7 @@ const observer = new MutationObserver(async () => {
       const post_url = post_title.href;
 
       GM.setClipboard(
-        getClipboardContent(post_title_text, post_url, iframe_url)
+        getClipboardContent(post_title_text, post_url, post_iframe_url)
       );
     };
   }
