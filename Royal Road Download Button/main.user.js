@@ -3,10 +3,12 @@
 // @license     MIT
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
+// We need to match everything in order to be able to download images
+// @match       *://*/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
-// @version     5.5
+// @version     6.0
 // @author      Rtonne
-// @description Adds buttons to download to Royal Road chapters
+// @description Adds buttons to download Royal Road chapters
 // The following @require is needed for jszip to work with @grant
 // @require     data:application/javascript,window.setImmediate%20%3D%20window.setImmediate%20%7C%7C%20((f%2C%20...args)%20%3D%3E%20window.setTimeout(()%20%3D%3E%20f(args)%2C%200))%3B
 // @require     https://cdn.jsdelivr.net/npm/jszip@3.10.1
@@ -18,20 +20,6 @@
 // @grant       GM.getValue
 // @grant       GM.setValue
 // ==/UserScript==
-
-/** @type {_Command[]} */
-const command_list = [
-  {
-    id: "use_chapter_id_as_prefix",
-    off_text: "🞎 Use the chapter ID as the file prefix",
-    on_text: "🞕 Use the chapter ID as the file prefix",
-    off_tooltip:
-      "Currently using the chapter's publish date as the filename's prefix.",
-    on_tooltip:
-      "Currently using the chapter ID in the chapter's URL as the filename's prefix.",
-  },
-];
-setupToggleCommands(command_list);
 
 const FICTION_REGEX = new RegExp(
   /^https:\/\/www.royalroad.com\/fiction\/\d+?\/[^\/]+$/
@@ -46,16 +34,42 @@ const CORRUPTED_CHAPTER_REGEX = new RegExp(
 );
 const PARSER = new DOMParser();
 
-if (FICTION_REGEX.test(window.location.href)) {
-  // If current page is a fiction page
-  setupFictionPageDownload();
-}
 if (
+  FICTION_REGEX.test(window.location.href) ||
   CHAPTER_REGEX.test(window.location.href) ||
   CORRUPTED_CHAPTER_REGEX.test(window.location.href)
 ) {
-  // If current page is a chapter page
-  setupChapterPageDownload();
+  /** @type {_Command[]} */
+  const command_list = [
+    {
+      id: "use_chapter_id_as_prefix",
+      off_text: "🞎 Use the chapter ID as the file prefix.",
+      on_text: "🞕 Use the chapter ID as the file prefix.",
+      off_tooltip:
+        "Currently using the chapter's publish date as the filename's prefix.",
+      on_tooltip:
+        "Currently using the chapter ID in the chapter's URL as the filename's prefix.",
+    },
+    {
+      id: "download_images",
+      off_text: "🞎 Include images in the download.",
+      on_text: "🞕 Include images in the download.",
+    },
+  ];
+  setupToggleCommands(command_list);
+
+  if (FICTION_REGEX.test(window.location.href)) {
+    // If current page is a fiction page
+    setupFictionPageDownload();
+  } else {
+    // If current page is a chapter page
+    setupChapterPageDownload();
+  }
+} else if (
+  window.name === "rtonne-royalroad-download-button-image-tab" &&
+  window.self !== window.top
+) {
+  // If current page is an iframe made to get an image for downloading
 }
 
 async function setupFictionPageDownload() {
@@ -247,7 +261,6 @@ async function downloadChapters(
   before_metadata = undefined,
   after_metadata = undefined
 ) {
-  console.log(chapter_metadata_list);
   const fiction_buttons = document.querySelectorAll(
     "a.rtonne-royalroad-download-button-fiction-button"
   );
@@ -280,6 +293,8 @@ async function downloadChapters(
   } else {
     fiction_name = window.location.href.split("/")[5];
   }
+
+  let image_urls = [];
 
   for (let index = 0; index < chapter_metadata_list.length; index++) {
     const chapter_metadata = chapter_metadata_list[index];
@@ -314,15 +329,18 @@ async function downloadChapters(
       next_date = after_metadata.date;
     }
 
-    const processed_html = await processChapterHtml(
+    const processed_chapter = await processChapterHtml(
       chapter_metadata.url,
       html,
       prev_date,
       next_date
     );
+    const processed_html_string = processed_chapter.html_string;
+    image_urls = image_urls.concat(processed_chapter.image_urls);
 
-    zip.file(`${fiction_name}/${chapter_filename}`, processed_html);
+    zip.file(`${fiction_name}/${chapter_filename}`, processed_html_string);
 
+    // TODO maybe make bar progress half if we're getting images after
     // Change the progress bars
     for (const progress_bar of progress_bars) {
       progress_bar.style.width = `${
@@ -330,6 +348,8 @@ async function downloadChapters(
       }%`;
     }
   }
+
+  console.log(image_urls);
 
   await zip
     .generateAsync({
@@ -364,6 +384,7 @@ async function downloadChapters(
  * @param {HTMLHtmlElement} html
  * @param {string} [prev_date] The publish date of the previous chapter.
  * @param {string} [next_date] The publish date of the next chapter.
+ * @returns {{html_string: string, image_urls: string[]}}
  */
 async function processChapterHtml(chapter_url, html, prev_date, next_date) {
   // Edit spoilers so they function the same offline
@@ -427,18 +448,31 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
     chapter_header.outerHTML +
     '<div class="portlet">';
 
+  let image_urls = [];
+
   const chapterElements = html.querySelector("div.chapter-content").parentNode
     .children;
   for (const element of chapterElements) {
-    if (element.classList.contains("chapter-content")) {
-      // Remove unnecessary classes from <p> and add chapter content
-      const paragraphs = element.querySelectorAll(":scope > p");
-      for (let paragraph of paragraphs) {
-        paragraph.removeAttribute("class");
+    if (
+      element.classList.contains("chapter-content") ||
+      element.classList.contains("author-note-portlet")
+    ) {
+      // Add chapter content and author notes
+      if (element.classList.contains("chapter-content")) {
+        // Remove unnecessary classes from <p> in the chapter content
+        const paragraphs = element.querySelectorAll(":scope > p");
+        for (let paragraph of paragraphs) {
+          paragraph.removeAttribute("class");
+        }
       }
-      chapter += element.outerHTML;
-    } else if (element.classList.contains("author-note-portlet")) {
-      // Add author notes
+      if (await GM.getValue("download_images", false)) {
+        // Save the image URLs for later download
+        const img_elements = element.querySelectorAll("img");
+        for (const img_element of img_elements) {
+          image_urls.push(img_element.src);
+          img_element.src = turnUrlIntoFilepath(img_element.src);
+        }
+      }
       chapter += element.outerHTML;
     } else if (
       element.classList.contains("nav-buttons") ||
@@ -473,7 +507,7 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
   */
   chapter = chapter.replace(/^\s+|(\s*\n)/gm, "");
 
-  return chapter;
+  return { html_string: chapter, image_urls: image_urls };
 }
 
 /**
@@ -613,6 +647,32 @@ async function getChapterFilename(
   const chapter_url_split = chapter_url.split("/");
   const chapter_name = chapter_url_split[chapter_url_split.length - 1];
   return `${filename_prefix}_${chapter_name}.html`;
+}
+
+/**
+ * Turns any file URL and turns it into a file path.
+ * @param {string} url
+ * @returns {string}
+ */
+function turnUrlIntoFilepath(url) {
+  // Getting the filename from a URL https://stackoverflow.com/a/36756650
+  const filename = (url.match(/^\w+:(\/+([^\/#?\s]+)){2,}/) || [])[2] || "";
+
+  // Put filename at the end of the URL so that all other parts (including params) create folders but the filename is correct
+  // Make path compatible with Windows/Android
+  // Make folder names have a maximum length of 100
+  // Remove repeated "/"
+  const filepath = (
+    "image/" +
+    url
+      .replace(filename, "")
+      .replaceAll(/[\\:*?"<>|]/g, "/")
+      .replaceAll(/([^\/]{100})()/g, "$1/") +
+    "/" +
+    filename
+  ).replaceAll(/[\/]+/g, "/");
+
+  return filepath;
 }
 
 /**
