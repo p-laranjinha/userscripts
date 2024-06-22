@@ -4,4 +4,4 @@ To customize the text for yourself you can edit the `getClipboardContent()` func
 
 ---
 
-![Image of the clipboard button](https://raw.githubusercontent.com/p-laranjinha/userscripts/master/Patreon%20Streamable%20Into%20Clipboard/images/buttons.png)
+![Image of the clipboard button](https://raw.githubusercontent.com/p-laranjinha/userscripts/master/Patreon%20IFrame%20Embed%20Into%20Clipboard/images/buttons.png)
