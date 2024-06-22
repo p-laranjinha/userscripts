@@ -3,8 +3,6 @@
 // @license     MIT
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
-// We need to match everything in order to be able to download images
-// @match       *://*/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
 // @version     6.0
 // @author      Rtonne
@@ -19,6 +17,7 @@
 // @grant       GM.unregisterMenuCommand
 // @grant       GM.getValue
 // @grant       GM.setValue
+// @grant       GM.xmlHttpRequest
 // ==/UserScript==
 
 const FICTION_REGEX = new RegExp(
@@ -34,42 +33,34 @@ const CORRUPTED_CHAPTER_REGEX = new RegExp(
 );
 const PARSER = new DOMParser();
 
-if (
-  FICTION_REGEX.test(window.location.href) ||
+/** @type {_Command[]} */
+const command_list = [
+  {
+    id: "use_chapter_id_as_prefix",
+    off_text: "🞎 Use the chapter ID as the file prefix.",
+    on_text: "🞕 Use the chapter ID as the file prefix.",
+    off_tooltip:
+      "Currently using the chapter's publish date as the filename's prefix.",
+    on_tooltip:
+      "Currently using the chapter ID in the chapter's URL as the filename's prefix.",
+  },
+  {
+    id: "download_images",
+    off_text: "🞎 Include images in the download.",
+    on_text: "🞕 Include images in the download.",
+  },
+];
+setupToggleCommands(command_list);
+
+if (FICTION_REGEX.test(window.location.href)) {
+  // If current page is a fiction page
+  setupFictionPageDownload();
+} else if (
   CHAPTER_REGEX.test(window.location.href) ||
   CORRUPTED_CHAPTER_REGEX.test(window.location.href)
 ) {
-  /** @type {_Command[]} */
-  const command_list = [
-    {
-      id: "use_chapter_id_as_prefix",
-      off_text: "🞎 Use the chapter ID as the file prefix.",
-      on_text: "🞕 Use the chapter ID as the file prefix.",
-      off_tooltip:
-        "Currently using the chapter's publish date as the filename's prefix.",
-      on_tooltip:
-        "Currently using the chapter ID in the chapter's URL as the filename's prefix.",
-    },
-    {
-      id: "download_images",
-      off_text: "🞎 Include images in the download.",
-      on_text: "🞕 Include images in the download.",
-    },
-  ];
-  setupToggleCommands(command_list);
-
-  if (FICTION_REGEX.test(window.location.href)) {
-    // If current page is a fiction page
-    setupFictionPageDownload();
-  } else {
-    // If current page is a chapter page
-    setupChapterPageDownload();
-  }
-} else if (
-  window.name === "rtonne-royalroad-download-button-image-tab" &&
-  window.self !== window.top
-) {
-  // If current page is an iframe made to get an image for downloading
+  // If current page is a chapter page
+  setupChapterPageDownload();
 }
 
 async function setupFictionPageDownload() {
@@ -294,8 +285,6 @@ async function downloadChapters(
     fiction_name = window.location.href.split("/")[5];
   }
 
-  let image_urls = [];
-
   for (let index = 0; index < chapter_metadata_list.length; index++) {
     const chapter_metadata = chapter_metadata_list[index];
     const html = await fetchChapterHtml(chapter_metadata.url);
@@ -335,12 +324,15 @@ async function downloadChapters(
       prev_date,
       next_date
     );
-    const processed_html_string = processed_chapter.html_string;
-    image_urls = image_urls.concat(processed_chapter.image_urls);
+    for (const image of processed_chapter.images) {
+      zip.file(`${fiction_name}/${image.path}`, image.blob);
+    }
 
-    zip.file(`${fiction_name}/${chapter_filename}`, processed_html_string);
+    zip.file(
+      `${fiction_name}/${chapter_filename}`,
+      processed_chapter.html_string
+    );
 
-    // TODO maybe make bar progress half if we're getting images after
     // Change the progress bars
     for (const progress_bar of progress_bars) {
       progress_bar.style.width = `${
@@ -348,8 +340,6 @@ async function downloadChapters(
       }%`;
     }
   }
-
-  console.log(image_urls);
 
   await zip
     .generateAsync({
@@ -384,7 +374,7 @@ async function downloadChapters(
  * @param {HTMLHtmlElement} html
  * @param {string} [prev_date] The publish date of the previous chapter.
  * @param {string} [next_date] The publish date of the next chapter.
- * @returns {{html_string: string, image_urls: string[]}}
+ * @returns {{html_string: string, images: [{path: string, blob: Blob}]}}
  */
 async function processChapterHtml(chapter_url, html, prev_date, next_date) {
   // Edit spoilers so they function the same offline
@@ -448,8 +438,7 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
     chapter_header.outerHTML +
     '<div class="portlet">';
 
-  let image_urls = [];
-
+  let images = [];
   const chapterElements = html.querySelector("div.chapter-content").parentNode
     .children;
   for (const element of chapterElements) {
@@ -466,11 +455,33 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
         }
       }
       if (await GM.getValue("download_images", false)) {
-        // Save the image URLs for later download
         const img_elements = element.querySelectorAll("img");
         for (const img_element of img_elements) {
-          image_urls.push(img_element.src);
-          img_element.src = turnUrlIntoFilepath(img_element.src);
+          try {
+            // Not using fetch() because images may require being redirected
+            // which I couldn't make work
+            const request = await GM.xmlHttpRequest({
+              url: img_element.src,
+              responseType: "blob",
+            });
+            if (request.status >= 400 && request.status < 600) {
+              throw request;
+            }
+            const image_path = turnImageUrlIntoFilepath(img_element.src);
+            img_element.setAttribute(
+              "onerror",
+              `this.onerror=null; this.src='${img_element.src}'`
+            );
+            img_element.src = image_path;
+            images.push({ path: image_path, blob: request.response });
+          } catch (err) {
+            console.error(
+              "Failed to download image:",
+              img_element.src,
+              chapter_url,
+              err
+            );
+          }
         }
       }
       chapter += element.outerHTML;
@@ -507,7 +518,7 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
   */
   chapter = chapter.replace(/^\s+|(\s*\n)/gm, "");
 
-  return { html_string: chapter, image_urls: image_urls };
+  return { html_string: chapter, images: images };
 }
 
 /**
@@ -650,11 +661,11 @@ async function getChapterFilename(
 }
 
 /**
- * Turns any file URL and turns it into a file path.
+ * Turns any image URL and turns it into a file path.
  * @param {string} url
  * @returns {string}
  */
-function turnUrlIntoFilepath(url) {
+function turnImageUrlIntoFilepath(url) {
   // Getting the filename from a URL https://stackoverflow.com/a/36756650
   const filename = (url.match(/^\w+:(\/+([^\/#?\s]+)){2,}/) || [])[2] || "";
 
@@ -663,7 +674,7 @@ function turnUrlIntoFilepath(url) {
   // Make folder names have a maximum length of 100
   // Remove repeated "/"
   const filepath = (
-    "image/" +
+    "images/" +
     url
       .replace(filename, "")
       .replaceAll(/[\\:*?"<>|]/g, "/")

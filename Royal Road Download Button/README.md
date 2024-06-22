@@ -4,7 +4,13 @@ When the button is pressed, the script scrapes the chosen chapters of the fictio
 
 The .html files contain styling to emulate Royal Road's default dark mode (with font size 16 due to personal preference), and working previous/next chapter buttons on desktop using the [file URI scheme](https://en.wikipedia.org/wiki/File_URI_scheme).
 
-You can choose if you want to use the chapter's publish date, or the chapter ID in the chapter's URL, as the filename prefix in order to keep the downloaded files in the correct order. This choice is in your userscript manager.
+There are some options you can change in your userscript manager:
+
+- If you want to use the **chapter's publish date**, or the **chapter ID in the chapter's URL** as the filename prefix.
+  - The filename prefix is used to keep the downloaded files in the correct order.
+- If you want to download the images included in the chapters as well.
+  - If an error ocurred while fetching an image and it couldn't be downloaded, you can find the error in the console.
+  - If you find this takes too much storage space, you can later delete the images and it will fall back to the online images.
 
 If you want the file names to use incremental numbers as the prefix, the last version that did this is [v4.8](https://greasyfork.org/en/scripts/466670-royal-road-download-button?version=1367939).
 
