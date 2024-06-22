@@ -16,9 +16,17 @@ There are some options you can change in your userscript manager:
 
 # How to access the files on Android
 
-On Android, it mostly works like on desktop, using a **file://** link on a browser, but I found that on Android to access those links, they either need to be a bookmark or your homepage.
+## Using the [file URI scheme](https://en.wikipedia.org/wiki/File_URI_scheme)
 
-Additionally, due to Android's increased restrictions, you'll need to use a tool like **adb** to find the internal storage and SD card locations. In my case, my internal storage was on **file:///sdcard/**, and my SD card was on **file:///storage/F6DA-0244/**.
+It mostly works like on desktop, using a **file://** link on a browser, but I found that to access those links on Android, they either need to be a bookmark or your homepage.
+
+Additionally, due to Android's increased restrictions, you'll need to use a tool like **adb** to find the internal storage and SD card locations. In my case, my internal storage was on **file:///sdcard/**, but my SD card required additional permissions to access which I was unable to grant to my browser.
+
+## Using other apps
+
+The apps I recommend are ones like [**HTTP File Server (+WebDAV)** by slowscript](https://play.google.com/store/apps/details?id=slowscript.httpfileserver), that create a small server in your phone so that you can access your files using any browser.
+
+You might be able to find an app made specifically for viewing HTML files if you look hard enough, but it may not work with the Previous/Next buttons or with downloaded images.
 
 # Other info
 
