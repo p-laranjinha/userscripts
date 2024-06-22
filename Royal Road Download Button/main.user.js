@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
-// @version     6.0
+// @version     6.1
 // @author      Rtonne
 // @description Adds buttons to download Royal Road chapters
 // The following @require is needed for jszip to work with @grant
@@ -569,7 +569,13 @@ async function fetchChapterMetadataList(url = null) {
       credentials: "omit",
     })
       .then((response) => response.text())
-      .then((text) => PARSER.parseFromString(text, "text/html"));
+      .then((text) => PARSER.parseFromString(text, "text/html"))
+      .catch((error) => {
+        alert(
+          "An error has ocurred while fetching the chapter list. Please refresh and try again. More details in the console."
+        );
+        throw error;
+      });
   }
 
   const chapter_metadata_list = [
