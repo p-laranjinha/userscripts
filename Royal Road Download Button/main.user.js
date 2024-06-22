@@ -285,9 +285,19 @@ async function downloadChapters(
     fiction_name = window.location.href.split("/")[5];
   }
 
+  let failed_image = false;
+  let failed_button = false;
+  let failed_chapter_fetch = false;
   for (let index = 0; index < chapter_metadata_list.length; index++) {
     const chapter_metadata = chapter_metadata_list[index];
     const html = await fetchChapterHtml(chapter_metadata.url);
+    if (!html) {
+      console.warn(
+        `The chapter with the url ${chapter_metadata.url} couldn't be fetched.`
+      );
+      failed_chapter_fetch = true;
+      continue;
+    }
 
     // In case chapter is corrupted and doesn't have the fslug parameter
     // This is done in the loop so we don't have to fetch 1 extra time
@@ -299,6 +309,7 @@ async function downloadChapters(
       fiction_name = fiction_url_split[fiction_url_split.length - 1];
     }
 
+    // This should never fail because both date and html are set
     const chapter_filename = await getChapterFilename(
       chapter_metadata.url,
       chapter_metadata.date,
@@ -327,6 +338,12 @@ async function downloadChapters(
     for (const image of processed_chapter.images) {
       zip.file(`${fiction_name}/${image.path}`, image.blob);
     }
+    if (processed_chapter.failed_image) {
+      failed_image = true;
+    }
+    if (processed_chapter.failed_button) {
+      failed_button = true;
+    }
 
     zip.file(
       `${fiction_name}/${chapter_filename}`,
@@ -339,6 +356,18 @@ async function downloadChapters(
         ((index + 1) / chapter_metadata_list.length) * 100
       }%`;
     }
+  }
+
+  if (failed_image) {
+    alert("1 or more images couldn't be downloaded. More info in the console.");
+  }
+  if (failed_button) {
+    alert(
+      "1 or more Previous/Next buttons's links couldn't be changed. More info in the console."
+    );
+  }
+  if (failed_chapter_fetch) {
+    alert("1 or more chapters couldn't be fetched. More info in the console.");
   }
 
   await zip
@@ -374,7 +403,7 @@ async function downloadChapters(
  * @param {HTMLHtmlElement} html
  * @param {string} [prev_date] The publish date of the previous chapter.
  * @param {string} [next_date] The publish date of the next chapter.
- * @returns {{html_string: string, images: [{path: string, blob: Blob}]}}
+ * @returns {{html_string: string, images: [{path: string, blob: Blob}], failed_image: boolean, failed_button: boolean}}
  */
 async function processChapterHtml(chapter_url, html, prev_date, next_date) {
   // Edit spoilers so they function the same offline
@@ -439,6 +468,8 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
     '<div class="portlet">';
 
   let images = [];
+  let failed_image = false;
+  let failed_button = false;
   const chapterElements = html.querySelector("div.chapter-content").parentNode
     .children;
   for (const element of chapterElements) {
@@ -475,12 +506,11 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
             img_element.src = image_path;
             images.push({ path: image_path, blob: request.response });
           } catch (err) {
-            console.error(
-              "Failed to download image:",
-              img_element.src,
-              chapter_url,
+            console.warn(
+              `Failed to download image with the url ${img_element.src}, on the chapter with the url ${chapter_url}`,
               err
             );
+            failed_image = true;
           }
         }
       }
@@ -500,8 +530,22 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
         let chapter_filename = "unknown";
         if (button.innerText.includes("Previous")) {
           chapter_filename = await getChapterFilename(button.href, prev_date);
+          if (!chapter_filename) {
+            console.warn(
+              `The url of the Previous button of the chapter with the url ${chapter_url} couldn't be changed.`
+            );
+            chapter_filename = ".";
+            failed_button = true;
+          }
         } else if (button.innerText.includes("Next")) {
           chapter_filename = await getChapterFilename(button.href, next_date);
+          if (!chapter_filename) {
+            console.warn(
+              `The url of the Next button of the chapter with the url ${chapter_url} couldn't be changed.`
+            );
+            chapter_filename = ".";
+            failed_button = true;
+          }
         }
 
         button.setAttribute("href", chapter_filename);
@@ -518,25 +562,28 @@ async function processChapterHtml(chapter_url, html, prev_date, next_date) {
   */
   chapter = chapter.replace(/^\s+|(\s*\n)/gm, "");
 
-  return { html_string: chapter, images: images };
+  return {
+    html_string: chapter,
+    images: images,
+    failed_image: failed_image,
+    failed_button: failed_button,
+  };
 }
 
 /**
  * @param {string} chapter_url
- * @returns {Promise<HTMLHtmlElement>}
+ * @returns {Promise<HTMLHtmlElement | void>}
  */
 async function fetchChapterHtml(chapter_url) {
-  // TODO: watch out for errors like 429 (Too many requests), or if the chapter no longer exists
   const html = await fetch(chapter_url, {
     credentials: "omit",
   })
     .then((response) => response.text())
     .then((text) => PARSER.parseFromString(text, "text/html"))
     .catch((error) => {
-      alert(
-        "An error has ocurred while fetching a chapter. Please refresh and try again. More details in the console."
-      );
-      throw error;
+      // If this fails, other chapters can still be downloaded, so we check outside this function.
+      console.error(error);
+      return;
     });
 
   return html;
@@ -571,6 +618,7 @@ async function fetchChapterMetadataList(url = null) {
       .then((response) => response.text())
       .then((text) => PARSER.parseFromString(text, "text/html"))
       .catch((error) => {
+        // If we can't get the list, nothing else would work so we can just throw.
         alert(
           "An error has ocurred while fetching the chapter list. Please refresh and try again. More details in the console."
         );
@@ -607,6 +655,7 @@ async function fetchChapterMetadataList(url = null) {
  * @param {string} chapter_url
  * @param {string} [date] Not required, but if set there may be one less fetch request.
  * @param {HTMLHtmlElement} [html] Not required, but if set there may be one less fetch request.
+ * @returns {Promise<string | void>}
  */
 async function getChapterFilename(
   chapter_url,
@@ -622,22 +671,11 @@ async function getChapterFilename(
   // Get the dates here if the button exists but the date is null
   // (can occur if a chapter comes out after we get the chapter metadata list)
   // Will also be used for the chapter page button
-  // TODO figure out what should happen if the prev/next chapter no longer exists
   let filename_prefix;
   if (use_chapter_id_as_prefix) {
     if (is_corrupted_chapter) {
-      if (!html) {
-        html = await fetchChapterHtml(chapter_url);
-      }
-
-      /** @type {string} */
-      const chapter_id_script_text = html
-        .evaluate("/html/body/script[contains(., 'chapterId')]", document)
-        .iterateNext().innerText;
-      const chapter_id = chapter_id_script_text.substring(
-        chapter_id_script_text.indexOf("=") + 2,
-        chapter_id_script_text.indexOf(";")
-      );
+      const chapter_url_split = chapter_url.split("?")[0].split("/");
+      const chapter_id = chapter_url_split[chapter_url_split.length - 1];
 
       filename_prefix = chapter_id;
     } else {
@@ -650,6 +688,11 @@ async function getChapterFilename(
     if (!date) {
       if (!html) {
         html = await fetchChapterHtml(chapter_url);
+        // If fetching the html failed, this function also fails
+        // but throw outside for extra context
+        if (!html) {
+          return;
+        }
       }
       const time_element = html.querySelector("i[title='Published'] ~ time");
       date = shortenDate(time_element.getAttribute("datetime"));
