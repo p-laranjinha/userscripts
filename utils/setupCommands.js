@@ -3,7 +3,7 @@
 // @license     MIT
 // @namespace   rtonne
 // @match       *://*/*
-// @version     1.0
+// @version     2.1
 // @author      Rtonne
 // @description Library that creates regular, toggle, and radio menu commands for userscript managers
 // @grant       GM.registerMenuCommand
@@ -94,7 +94,7 @@ async function _registerCommand(command_list, command) {
     for (const radio of command.radios) {
       if (radio.value === checked_radio_value) {
         const text_prefix = "🞊 ";
-        GM.registerCommand(text_prefix + radio.text, () => {}, {
+        GM.registerMenuCommand(text_prefix + radio.text, () => {}, {
           id: radio.id,
           title: radio.tooltip,
           accessKey: radio.access_key,
@@ -102,7 +102,7 @@ async function _registerCommand(command_list, command) {
         });
       } else {
         const text_prefix = "🞅 ";
-        GM.registerCommand(
+        GM.registerMenuCommand(
           text_prefix + radio.text,
           () => _radioCommand(command_list, command, radio.value),
           {
@@ -121,7 +121,7 @@ async function _registerCommand(command_list, command) {
     } else {
       text_prefix = "🞎 ";
     }
-    GM.registerCommand(
+    GM.registerMenuCommand(
       text_prefix + command.text,
       () => _toggleCommand(command_list, command),
       {
@@ -132,7 +132,7 @@ async function _registerCommand(command_list, command) {
       }
     );
   } else if (command.type === "button") {
-    GM.registerCommand(command.text, command.clickFunction, {
+    GM.registerMenuCommand(command.text, command.clickFunction, {
       id: command.id,
       title: command.tooltip,
       accessKey: command.access_key,
