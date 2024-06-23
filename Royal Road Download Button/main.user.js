@@ -4,14 +4,14 @@
 // @namespace   rtonne
 // @match       https://www.royalroad.com/fiction/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=royalroad.com
-// @version     6.2
+// @version     6.3
 // @author      Rtonne
 // @description Adds buttons to download Royal Road chapters
 // The following @require is needed for jszip to work with @grant
 // @require     data:application/javascript,window.setImmediate%20%3D%20window.setImmediate%20%7C%7C%20((f%2C%20...args)%20%3D%3E%20window.setTimeout(()%20%3D%3E%20f(args)%2C%200))%3B
 // @require     https://cdn.jsdelivr.net/npm/jszip@3.10.1
 // @require     https://cdn.jsdelivr.net/npm/file-saver@2.0.5
-// @require     https://update.greasyfork.org/scripts/498119/1395863/setupToggleCommands.js
+// @require     https://update.greasyfork.org/scripts/498119/1399005/setupCommands.js
 // @run-at      document-end
 // @grant       GM.registerMenuCommand
 // @grant       GM.unregisterMenuCommand
@@ -36,21 +36,29 @@ const PARSER = new DOMParser();
 /** @type {_Command[]} */
 const command_list = [
   {
-    id: "use_chapter_id_as_prefix",
-    off_text: "🞎 Use the chapter ID as the file prefix.",
-    on_text: "🞕 Use the chapter ID as the file prefix.",
-    off_tooltip:
-      "Currently using the chapter's publish date as the filename's prefix.",
-    on_tooltip:
-      "Currently using the chapter ID in the chapter's URL as the filename's prefix.",
+    type: "radio",
+    id: "filename_prefix",
+    default_value: "chapter_id",
+    radios: [
+      {
+        value: "chapter_id",
+        id: "filename_prefix_chapter_id",
+        text: "Chapter ID as the file prefix.",
+      },
+      {
+        value: "publish_date",
+        id: "filename_prefix_publish_date",
+        text: "Chapter's publish date as the file prefix.",
+      },
+    ],
   },
   {
+    type: "toggle",
     id: "download_images",
-    off_text: "🞎 Include images in the download.",
-    on_text: "🞕 Include images in the download.",
+    text: "Include images in the download.",
   },
 ];
-setupToggleCommands(command_list);
+setupCommands(command_list);
 
 if (FICTION_REGEX.test(window.location.href)) {
   // If current page is a fiction page
@@ -662,10 +670,8 @@ async function getChapterFilename(
   date = undefined,
   html = undefined
 ) {
-  const use_chapter_id_as_prefix = await GM.getValue(
-    "use_chapter_id_as_prefix",
-    false
-  );
+  const use_chapter_id_as_prefix =
+    (await GM.getValue("filename_prefix", "chapter_id")) === "chapter_id";
   const is_corrupted_chapter = CORRUPTED_CHAPTER_REGEX.test(chapter_url);
 
   // Get the dates here if the button exists but the date is null
