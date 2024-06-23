@@ -38,7 +38,7 @@ const command_list = [
   {
     type: "radio",
     id: "filename_prefix",
-    default_value: "chapter_id",
+    default_value: "publish_date",
     radios: [
       {
         value: "chapter_id",
@@ -671,7 +671,7 @@ async function getChapterFilename(
   html = undefined
 ) {
   const use_chapter_id_as_prefix =
-    (await GM.getValue("filename_prefix", "chapter_id")) === "chapter_id";
+    (await GM.getValue("filename_prefix", "publish_date")) === "chapter_id";
   const is_corrupted_chapter = CORRUPTED_CHAPTER_REGEX.test(chapter_url);
 
   // Get the dates here if the button exists but the date is null

@@ -9,7 +9,8 @@ The .html files contain styling to emulate Royal Road's default dark mode (with 
 There are some options you can change in your userscript manager:
 
 - If you want to use the **chapter's publish date**, or the **chapter ID in the chapter's URL** as the filename prefix.
-  - The filename prefix is used to keep the downloaded files in the correct order.
+  - The **chapter's publish date** is the default and will keep the chapter release order.
+  - The **chapter ID in the chapter's URL** can keep the chapter release order, but if the newer chapters' IDs have more digits than the older, the order will be wrong (for example, while 1000000 is bigger than 300000, the file system will display them in the wrong order).
 - If you want to download the images included in the chapters as well.
   - If an error ocurred while fetching an image and it couldn't be downloaded, you can find the error in the console.
   - If you find this takes too much storage space, you can later delete the images and it will fall back to the online images.
