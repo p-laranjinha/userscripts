@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.youtube.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=youtube.com
-// @version     1.6
+// @version     1.7
 // @author      Rtonne
 // @description Adds toggles to enable/disable some styles that change Youtube
 // @require     https://update.greasyfork.org/scripts/498119/1395863/setupToggleCommands.js
@@ -102,6 +102,24 @@ const commands = [
     toggleOffFunction: () =>
       GM.addStyle(`
       ytd-rich-section-renderer:has(> div > :not([is-shorts]):not([thumbnail-style])) {
+        display: none;
+      }
+    `),
+  },
+  {
+    id: "description_shorts",
+    default_value: true,
+    on_text: "🞕 Remix Shorts in Description",
+    off_text: "🞎 Remix Shorts in Description",
+    toggleOnFunction: () =>
+      GM.addStyle(`
+      #description ytd-reel-shelf-renderer {
+        display: unset;
+      }
+    `),
+    toggleOffFunction: () =>
+      GM.addStyle(`
+      #description ytd-reel-shelf-renderer {
         display: none;
       }
     `),

@@ -6,7 +6,8 @@ Current available toggles:
 - Removes comments from the videos;
 - Removes related videos on the side of currently playing videos;
 - Removes shorts from home and subscriptions page;
-- Removes community posts from home and subscriptions page.
+- Removes community posts from home and subscriptions page;
+- Removes the "Shorts remixing this video" from video descriptions.
 
 ---
 
