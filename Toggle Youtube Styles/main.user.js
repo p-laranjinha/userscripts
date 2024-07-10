@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.youtube.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=youtube.com
-// @version     1.7
+// @version     1.8
 // @author      Rtonne
 // @description Adds toggles to enable/disable some styles that change Youtube
 // @require     https://update.greasyfork.org/scripts/498119/1395863/setupToggleCommands.js
@@ -30,6 +30,61 @@ const commands = [
     toggleOffFunction: () =>
       GM.addStyle(`
       #sections.ytd-guide-renderer > ytd-guide-section-renderer:nth-child(n+3) {
+        display: none;
+      }
+    `),
+  },
+  {
+    id: "sidebar_shorts",
+    default_value: true,
+    on_text: "🞕 Shorts Sidebar Button",
+    off_text: "🞎 Shorts Sidebar Button",
+    // This hides all the buttons without a href in the first sidebar section (should only be Shorts right now)
+    toggleOnFunction: () =>
+      GM.addStyle(`
+      ytd-guide-section-renderer:first-of-type ytd-guide-entry-renderer:not(:has(> a[href])) {
+        display: unset;
+      }
+    `),
+    toggleOffFunction: () =>
+      GM.addStyle(`
+      ytd-guide-section-renderer:first-of-type ytd-guide-entry-renderer:not(:has(> a[href])) {
+        display: none;
+      }
+    `),
+  },
+  {
+    id: "shorts",
+    default_value: true,
+    on_text: "🞕 Shorts in Feed",
+    off_text: "🞎 Shorts in Feed",
+    toggleOnFunction: () =>
+      GM.addStyle(`
+      ytd-rich-section-renderer:has(> div > [is-shorts]) {
+        display: unset;
+      }
+    `),
+    toggleOffFunction: () =>
+      GM.addStyle(`
+      ytd-rich-section-renderer:has(> div > [is-shorts]) {
+        display: none;
+      }
+    `),
+  },
+  {
+    id: "community",
+    default_value: true,
+    on_text: "🞕 Community Posts in Feed",
+    off_text: "🞎 Community Posts in Feed",
+    toggleOnFunction: () =>
+      GM.addStyle(`
+      ytd-rich-section-renderer:has(> div > :not([is-shorts]):not([thumbnail-style])) {
+        display: unset;
+      }
+    `),
+    toggleOffFunction: () =>
+      GM.addStyle(`
+      ytd-rich-section-renderer:has(> div > :not([is-shorts]):not([thumbnail-style])) {
         display: none;
       }
     `),
@@ -66,42 +121,6 @@ const commands = [
     toggleOffFunction: () =>
       GM.addStyle(`
       #secondary.ytd-watch-flexy > #secondary-inner > #related {
-        display: none;
-      }
-    `),
-  },
-  {
-    id: "shorts",
-    default_value: true,
-    on_text: "🞕 Shorts",
-    off_text: "🞎 Shorts",
-    toggleOnFunction: () =>
-      GM.addStyle(`
-      ytd-rich-section-renderer:has(> div > [is-shorts]) {
-        display: unset;
-      }
-    `),
-    toggleOffFunction: () =>
-      GM.addStyle(`
-      ytd-rich-section-renderer:has(> div > [is-shorts]) {
-        display: none;
-      }
-    `),
-  },
-  {
-    id: "community",
-    default_value: true,
-    on_text: "🞕 Community Posts",
-    off_text: "🞎 Community Posts",
-    toggleOnFunction: () =>
-      GM.addStyle(`
-      ytd-rich-section-renderer:has(> div > :not([is-shorts]):not([thumbnail-style])) {
-        display: unset;
-      }
-    `),
-    toggleOffFunction: () =>
-      GM.addStyle(`
-      ytd-rich-section-renderer:has(> div > :not([is-shorts]):not([thumbnail-style])) {
         display: none;
       }
     `),
