@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.youtube.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=youtube.com
-// @version     1.8
+// @version     1.9
 // @author      Rtonne
 // @description Adds toggles to enable/disable some styles that change Youtube
 // @require     https://update.greasyfork.org/scripts/498119/1395863/setupToggleCommands.js
@@ -42,13 +42,15 @@ const commands = [
     // This hides all the buttons without a href in the first sidebar section (should only be Shorts right now)
     toggleOnFunction: () =>
       GM.addStyle(`
-      ytd-guide-section-renderer:first-of-type ytd-guide-entry-renderer:not(:has(> a[href])) {
+      ytd-guide-section-renderer:first-of-type ytd-guide-entry-renderer:not(:has(> a[href])),
+      ytd-mini-guide-entry-renderer:not(:has(> a[href])) {
         display: unset;
       }
     `),
     toggleOffFunction: () =>
       GM.addStyle(`
-      ytd-guide-section-renderer:first-of-type ytd-guide-entry-renderer:not(:has(> a[href])) {
+      ytd-guide-section-renderer:first-of-type ytd-guide-entry-renderer:not(:has(> a[href])),
+      ytd-mini-guide-entry-renderer:not(:has(> a[href])) {
         display: none;
       }
     `),
