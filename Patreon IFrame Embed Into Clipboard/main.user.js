@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.patreon.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=patreon.com
-// @version     1.3
+// @version     1.4
 // @author      Rtonne
 // @description Adds a button to turn Patreon IFrame embedded posts into custom text on your clipboard
 // @run-at      document-end
@@ -15,7 +15,7 @@ function getClipboardContent(post_title_text, post_url, post_iframe_url) {
   // The content of this function is for my use case, and was put into this
   // function so you could change it for your use case easier, so go ahead!
   const post_iframe_search_url = post_iframe_url.substring(
-    post_iframe_url.indexOf("?") + 1
+    post_iframe_url.indexOf("?") + 1,
   );
   const post_iframe_search_params = new URLSearchParams(post_iframe_search_url);
   const post_streamable_url = post_iframe_search_params.get("src");
@@ -43,7 +43,7 @@ const observer = new MutationObserver(async () => {
 
   const elements = await waitForElements(
     document,
-    "li > div[data-tag='post-card']"
+    "li > div[data-tag='post-card']",
   );
 
   for (const element of elements) {
@@ -51,19 +51,22 @@ const observer = new MutationObserver(async () => {
       continue;
     }
     const post_video_figure = element.querySelector(
-      "figure[title='video thumbnail']"
+      "figure[title='video thumbnail']",
     );
     if (!post_video_figure) {
       continue;
     }
-    const more_actions_button = element.querySelector(
-      "button[data-tag='more-actions-button']"
+    const more_actions_button_container = element.querySelector(
+      "div:has(> button[data-tag='more-actions-button'])",
+    );
+    const more_actions_button = more_actions_button_container.querySelector(
+      "button[data-tag='more-actions-button']",
     );
 
     const clipboard_button = document.createElement("button");
     clipboard_button.className = more_actions_button.className;
     clipboard_button.classList.add("rtonne-patreon-streamable-button");
-    more_actions_button.before(clipboard_button);
+    more_actions_button_container.before(clipboard_button);
     const clipboard_button_svg_container = document.createElement("div");
     clipboard_button_svg_container.className =
       more_actions_button.children[0].className;
@@ -78,13 +81,13 @@ const observer = new MutationObserver(async () => {
       const post_iframe_url = post_iframe.src;
 
       const post_title = element.querySelector(
-        "span[data-tag='post-title'] > a"
+        "span[data-tag='post-title'] > a",
       );
       const post_title_text = post_title.innerText.trim();
       const post_url = post_title.href;
 
       GM.setClipboard(
-        getClipboardContent(post_title_text, post_url, post_iframe_url)
+        getClipboardContent(post_title_text, post_url, post_iframe_url),
       );
     };
   }
