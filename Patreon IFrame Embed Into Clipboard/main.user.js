@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.patreon.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=patreon.com
-// @version     1.4
+// @version     1.5
 // @author      Rtonne
 // @description Adds a button to turn Patreon IFrame embedded posts into custom text on your clipboard
 // @run-at      document-end
@@ -43,7 +43,7 @@ const observer = new MutationObserver(async () => {
 
   const elements = await waitForElements(
     document,
-    "li > div[data-tag='post-card']",
+    "li div[data-tag='post-card']",
   );
 
   for (const element of elements) {
