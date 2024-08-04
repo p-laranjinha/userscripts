@@ -23,7 +23,7 @@ function getClipboardContent(post_title_text, post_url, post_iframe_url) {
   return `
 ### ${post_title_text} [](${post_url})
 
-- [ ] :LiEye:
+- [ ] 👁
 
 <iframe src="${post_streamable_url}" style="width: 100%; max-height: 70vh; aspect-ratio: 16 / 9;" allowfullscreen></iframe>
 `;
