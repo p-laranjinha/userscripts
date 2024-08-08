@@ -4,7 +4,7 @@
 // @namespace   rtonne
 // @match       https://www.youtube.com/*
 // @icon        https://www.google.com/s2/favicons?sz=64&domain=youtube.com
-// @version     1.6
+// @version     1.7
 // @author      Rtonne
 // @description Adds a button to remove videos from playlists just like on mobile
 // @run-at      document-end
@@ -71,7 +71,7 @@ const observer = new MutationObserver(async () => {
     }
     const elements = await waitForElements(
       document,
-      "ytd-playlist-video-renderer"
+      "ytd-playlist-video-renderer",
     );
 
     // If the url is different we are in a different playlist
@@ -90,7 +90,7 @@ const observer = new MutationObserver(async () => {
     // If the list cannot be sorted, we assume we can't remove from it either
     if (
       !document.querySelector(
-        "#header-container > #filter-menu > yt-sort-filter-sub-menu-renderer"
+        "#header-container > #filter-menu > yt-sort-filter-sub-menu-renderer",
       )
     ) {
       return;
@@ -108,15 +108,15 @@ const observer = new MutationObserver(async () => {
       const elementStyle = document.defaultView.getComputedStyle(element);
       const button = document.createElement("button");
       button.className = "rtonne-youtube-playlist-delete-button";
-      button.innerHTML = getYoutubeTrashSvg();
       button.style.height = elementStyle.height;
       button.style.borderRadius = `0 ${elementStyle.borderTopRightRadius} ${elementStyle.borderBottomRightRadius} 0`;
+      button.append(getYoutubeTrashSvg());
 
       element.appendChild(button);
 
       button.onclick = async () => {
         document.body.classList.add(
-          "rtonne-youtube-playlist-delete-button-in-progress"
+          "rtonne-youtube-playlist-delete-button-in-progress",
         );
 
         // Click the 3 dot menu button on the video
@@ -124,7 +124,7 @@ const observer = new MutationObserver(async () => {
 
         const [popup] = await waitForElements(
           document,
-          "tp-yt-iron-dropdown.ytd-popup-container:has(> div > ytd-menu-popup-renderer):not([style*='display: none;'])"
+          "tp-yt-iron-dropdown.ytd-popup-container:has(> div > ytd-menu-popup-renderer):not([style*='display: none;'])",
         );
 
         // Set the popup left to -10000px to hide it
@@ -132,14 +132,14 @@ const observer = new MutationObserver(async () => {
 
         const [popup_remove_button] = await waitForElements(
           popup,
-          `ytd-menu-service-item-renderer:has(path[d="${getSvgPathD()}"])`
+          `ytd-menu-service-item-renderer:has(path[d="${getSvgPathD()}"])`,
         );
         await removeVideo(popup_remove_button, element);
 
         // In case of error and the popup doesn't hide
         document.body.click();
         document.body.classList.remove(
-          "rtonne-youtube-playlist-delete-button-in-progress"
+          "rtonne-youtube-playlist-delete-button-in-progress",
         );
       };
     });
@@ -160,7 +160,7 @@ const sortObserver = new MutationObserver(() => {
   }
   if (
     !document.querySelector(
-      "#header-container > #filter-menu > yt-sort-filter-sub-menu-renderer"
+      "#header-container > #filter-menu > yt-sort-filter-sub-menu-renderer",
     )
   ) {
     document
@@ -174,10 +174,24 @@ sortObserver.observe(document.body, {
 });
 
 function getYoutubeTrashSvg() {
-  return `<div style="height: 24px;">
-<svg enable-background="new 0 0 24 24" height="24" viewBox="0 0 24 24" width="24" focusable="false" style="pointer-events: none; display: block; width: 100%; height: 100%;">
-<path d="${getSvgPathD()}"></path>
-</svg></div>`;
+  const xmlns = "http://www.w3.org/2000/svg";
+  const container = document.createElement("div");
+  container.setAttribute("style", "height: 24px;");
+  const svg = document.createElementNS(xmlns, "svg");
+  svg.setAttribute("enable-background", "new 0 0 24 24");
+  svg.setAttribute("height", "24");
+  svg.setAttribute("width", "24");
+  svg.setAttribute("viewbox", "0 0 24 24");
+  svg.setAttribute("focusable", "false");
+  svg.setAttribute(
+    "style",
+    "pointer-events: none;display: block;margin: auto;",
+  );
+  container.append(svg);
+  const path = document.createElementNS(xmlns, "path");
+  path.setAttribute("d", getSvgPathD());
+  svg.append(path);
+  return container;
 }
 
 // This function is separate to find the menu's remove button in the observer
